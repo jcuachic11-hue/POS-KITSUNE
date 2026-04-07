@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Módulo de Devoluciones - POS Kitsune</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    form { margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; max-width: 400px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    button { background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #125a9c; }
+    .back-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #666; }
+  </style>
+</head>
+<body>
+ <a href="index.html" style="text-decoration: none; color: #666;">
+  <h2>🔄 Módulo de Devoluciones</h2>
+  <p>Registra una devolución para reintegrar stock:</p>
+
+  <form id="formDevolucion">
+    <label>ID Producto:</label>
+    <input type="text" id="productoId" placeholder="Ej: 101" required>
+    <label>Cantidad a devolver:</label>
+    <input type="number" id="cantidad" min="1" value="1" required>
+    <button type="submit">Registrar Devolución</button>
+  </form>
+
+  <script>
+    document.getElementById("formDevolucion").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const productoId = document.getElementById("productoId").value;
+      const cantidad = document.getElementById("cantidad").value;
+      const token = localStorage.getItem("token");
+
+      try {
+        const res = await fetch("/devoluciones", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ productoId, cantidad })
+        });
+
+        const data = await res.json();
+
+        // 💡 Ajustado para usar 'error: false' de tu archivo respuestas.js
+        if (data.error === false) {
+          alert("✅ Éxito: " + (data.body || "Devolución registrada"));
+          document.getElementById("formDevolucion").reset();
+        } else {
+          alert("❌ Error: " + (data.body || "No se pudo procesar"));
+        }
+      } catch (err) {
+        alert("Error de conexión: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

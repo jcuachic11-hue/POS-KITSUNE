@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - POS Kitsune</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #f4f4f4; padding: 10px 20px; border-radius: 8px; border: 1px solid #ddd; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px; }
+        .card { padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center; text-decoration: none; color: #333; transition: 0.3s; }
+        .card:hover { background: #e3f2fd; border-color: #2196f3; }
+        .card h3 { margin: 10px 0; }
+        button { cursor: pointer; padding: 8px 16px; background: #ff4444; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🦊 POS Kitsune</h1>
+        <div>
+            <span id="displayUsuario" style="font-weight: bold; margin-right: 15px;"></span>
+            <button onclick="cerrarSesion()">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="menu-grid">
+        <a href="productos.html" class="card"><h3>📦 Productos</h3><p>Gestionar inventario</p></a>
+        <a href="usuarios.html" class="card"><h3>👥 Usuarios</h3><p>Control de accesos</p></a>
+        <a href="ventas.html" class="card"><h3>💰 Ventas</h3><p>Caja y Carrito</p></a>
+        <a href="devoluciones.html" class="card"><h3>🔄 Devoluciones</h3><p>Reingreso de stock</p></a>
+    </div>
+
+    <script>
+        const usuarioLogueado = localStorage.getItem("usuario");
+
+        if (!usuarioLogueado) {
+            window.location.href = "login.html";
+        } else {
+            document.getElementById('displayUsuario').innerText = "Usuario: " + usuarioLogueado;
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+</html>

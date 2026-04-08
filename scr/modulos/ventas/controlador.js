@@ -1,4 +1,4 @@
-const conexion = require('../../db/mysql'); // Ajustado a tu archivo de conexión
+const conexion = require('../../bd/mysql'); // Ajustado a tu archivo de conexión
 const respuestas = require('../../red/respuestas');
 
 // ⚠️ Nota: Para un POS real, el carrito debería manejarse en el Frontend (localStorage)

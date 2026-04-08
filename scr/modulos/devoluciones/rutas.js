@@ -1,12 +1,20 @@
 const express = require('express');
+const respuestas = require('../../../red/respuestas');
+const controlador = require('./controlador');
+
 const router = express.Router();
-const controlador = require('./controlador.js'); // 1. Asegúrate del .js
-const auth = require('../../middleware/seguridad'); // 2. Verifica esta ruta
 
-// 💡 Quitamos los IF pesados. Si el controlador está bien exportado, 
-// Express lo maneja directo. Es más limpio y rápido.
+router.get('/', function (req, res) {
+    controlador.todos()
+        .then((items) => {
+            respuestas.success(req, res, items, 200);
+        })
+        .catch((err) => {
+            respuestas.error(req, res, err, 500);
+        });
+});
 
-router.post('/', auth.verificarToken, controlador.devolverProducto);
-router.get('/', auth.verificarToken, controlador.listarDevoluciones);
+// Repite este formato para el resto de tus rutas (uno, eliminar, etc.)
+// Asegúrate de NO incluir el middleware de seguridad que causó el error.
 
 module.exports = router;

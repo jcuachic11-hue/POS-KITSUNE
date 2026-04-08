@@ -1,4 +1,4 @@
-const conexion = require('../../config'); 
+const conexion = require('../../db/mysql'); 
 const jwt = require('jsonwebtoken');
 const respuestas = require('../../red/respuestas');
 

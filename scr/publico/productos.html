@@ -4,11 +4,11 @@
     const API_URL = '/productos';
     const token = localStorage.getItem('token');
 
-    // 🛡️ Protección: Si no hay token, mandarlo al login de una vez
-    if (!token) {
-      alert("Sesión expirada. Por favor inicia sesión.");
-      window.location.href = "login.html";
-    }
+    // Protección: Si no hay token, mandarlo al login de una vez
+   // if (!token) {
+      //alert("Sesión expirada. Por favor inicia sesión.");
+      //window.location.href = "login.html";
+  //  }
 
     async function cargarProductos() {
       if (!token) return;

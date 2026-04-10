@@ -5,8 +5,7 @@ const auth = require('../auth/middleware');
 const respuestas = require('../../red/respuestas');
 
 // LISTAR PRODUCTOS
-// Se comenta 'auth.verificarToken' para permitir la carga de la tabla sin login
-router.get('/', /* auth.verificarToken, */ (req, res) => {
+router.get('/', (req, res) => {
     controlador.listarProductos()
         .then((items) => { 
             respuestas.success(req, res, items, 200); 
@@ -16,40 +15,35 @@ router.get('/', /* auth.verificarToken, */ (req, res) => {
         });
 });
 
-// CREAR PRODUCTO (POST)
-// Cambiado a '/agregar' para coincidir con el fetch del HTML
-// Se comenta 'auth.verificarToken' para que no rebote el "Bearer null"
-router.post('/agregar', /* auth.verificarToken, */ (req, res) => {
-    console.log("📦 Datos recibidos en el backend:", req.body);
+// CREAR PRODUCTO (POST) - AQUÍ ES DONDE AGREGAMOS EL "RASTREO"
+router.post('/agregar', (req, res) => {
+    // 1. Esto nos dirá si el HTML está enviando los datos bien
+    console.log("--- INTENTO DE GUARDAR PRODUCTO ---");
+    console.log("Datos recibidos (body):", req.body);
+
     controlador.guardarProducto(req.body)
         .then(() => { 
+            console.log("✅ Producto guardado con éxito en la DB");
             respuestas.success(req, res, 'Guardado correctamente', 201); 
         })
         .catch((err) => { 
-            console.error("❌ Error en el controlador al guardar:", err);
-            respuestas.error(req, res, err, 500); 
+            // 2. Esto nos dirá el error EXACTO de MySQL o del código
+            console.error("❌ ERROR DETALLADO AL GUARDAR:", err); 
+            
+            // Enviamos el mensaje de error real al navegador para no adivinar
+            respuestas.error(req, res, err.message || 'Error interno', 500); 
         });
 });
 
 // ACTUALIZAR / ELIMINAR (PUT)
-// Se ajusta la ruta a '/eliminar' para que coincida con el botón del HTML
-router.put('/eliminar', /* auth.verificarToken, */ (req, res) => {
+router.put('/eliminar', (req, res) => {
+    console.log("--- INTENTO DE ELIMINAR/INACTIVAR ---");
     controlador.guardarProducto(req.body)
         .then(() => { 
             respuestas.success(req, res, 'Acción realizada correctamente', 200); 
         })
         .catch((err) => { 
-            respuestas.error(req, res, err, 500); 
-        });
-});
-
-// ELIMINAR FÍSICO (Opcional, si usas DELETE por ID)
-router.delete('/:id', /* auth.verificarToken, */ (req, res) => {
-    controlador.eliminarProducto(req.params.id)
-        .then(() => { 
-            respuestas.success(req, res, 'Eliminado de la base de datos', 200); 
-        })
-        .catch((err) => { 
+            console.error("❌ ERROR AL ELIMINAR:", err);
             respuestas.error(req, res, err, 500); 
         });
 });

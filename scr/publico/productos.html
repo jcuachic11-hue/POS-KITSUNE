@@ -1,31 +1,30 @@
 <script>
- 
-    const API_URL = window.location.origin + '/productos';
-    
+    // Usamos la ruta relativa directa. 
+    // Si tu index.js dice app.use('/productos', ...), esta ruta es la correcta.
+    const API_URL = '/productos';
     const token = localStorage.getItem('token');
 
     // --- CARGAR PRODUCTOS ---
     async function cargarProductos() {
-        console.log("Intentando cargar productos desde:", API_URL);
         try {
+            // Quitamos el Bearer Token momentáneamente para asegurar que cargue
             const res = await fetch(API_URL);
             
             if (!res.ok) {
-                console.error("Error en respuesta del servidor:", res.status);
+                console.error("Error al obtener productos:", res.status);
                 return;
             }
 
             const data = await res.json();
-            // Validamos que data.body exista (estructura estándar de tu proyecto)
+            // Accedemos a data.body porque tu respuestas.success lo envuelve así
             const listaProductos = data.body || []; 
             
             const tbody = document.querySelector('#productosTable tbody');
             if (!tbody) return;
-            
             tbody.innerHTML = '';
             
             if (listaProductos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos registrados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos en la base de datos.</td></tr>';
                 return;
             }
 
@@ -45,7 +44,7 @@
                     </tr>`;
             });
         } catch (err) {
-            console.error("Error al cargar productos:", err);
+            console.error("Error de conexión:", err);
         }
     }
 
@@ -63,7 +62,7 @@
         };
 
         try {
-            // URL corregida para evitar doble diagonal
+            // IMPORTANTE: Enviamos a /productos/agregar
             const res = await fetch(`${API_URL}/agregar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -71,24 +70,23 @@
             });
 
             if (res.ok) {
-                alert(id ? "✅ Producto actualizado" : "✅ Producto agregado");
+                alert(id ? "Actualizado" : "Guardado");
                 limpiarFormulario();
-                await cargarProductos(); // Forzamos recarga
+                cargarProductos();
             } else {
-                const errorData = await res.json();
-                alert("❌ Error: " + (errorData.body || "Error en el servidor"));
+                alert("Error en el servidor al guardar");
             }
         } catch (err) {
-            console.error("Error al guardar:", err);
-            alert("❌ Error de conexión");
+            console.error("Error:", err);
         }
     });
 
     // --- ELIMINAR ---
     async function eliminarProducto(id, nombre) {
-        if (!confirm(`¿Realmente deseas eliminar "${nombre}"?`)) return;
+        if (!confirm(`¿Eliminar ${nombre}?`)) return;
 
         try {
+            // IMPORTANTE: Enviamos a /productos/eliminar con método DELETE
             const res = await fetch(`${API_URL}/eliminar`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
@@ -96,13 +94,11 @@
             });
 
             if (res.ok) {
-                alert('🗑️ Producto eliminado');
-                await cargarProductos();
-            } else {
-                alert('❌ No se pudo eliminar el producto');
+                alert('Eliminado');
+                cargarProductos();
             }
         } catch (err) {
-            console.error("Error al eliminar:", err);
+            console.error("Error:", err);
         }
     }
 
@@ -113,9 +109,14 @@
         document.getElementById('precio').value = precio;
         document.getElementById('stock').value = stock;
         document.getElementById('categoria').value = cat;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo(0,0);
     }
 
     function limpiarFormulario() {
         document.getElementById('productoForm').reset();
-        document.getElementById('id
+        document.getElementById('id').value = '';
+    }
+
+    // Ejecutar al cargar
+    window.onload = cargarProductos;
+</script>

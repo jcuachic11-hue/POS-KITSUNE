@@ -35,16 +35,21 @@ router.post('/agregar', (req, res) => {
         });
 });
 
-// ACTUALIZAR / ELIMINAR (PUT)
-router.put('/eliminar', (req, res) => {
-    console.log("--- INTENTO DE ELIMINAR/INACTIVAR ---");
-    controlador.guardarProducto(req.body)
+// --- ELIMINAR ---
+router.delete('/eliminar', (req, res) => {
+    console.log("--- INTENTO DE ELIMINAR ---");
+    console.log("Cuerpo recibido:", req.body);
+
+    // Extraemos el id del body para que el controlador reciba solo el número
+    const idParaEliminar = req.body.id; 
+
+    controlador.eliminarProducto(idParaEliminar)
         .then(() => { 
-            respuestas.success(req, res, 'Acción realizada correctamente', 200); 
+            respuestas.success(req, res, 'Eliminado con éxito', 200); 
         })
         .catch((err) => { 
             console.error("❌ ERROR AL ELIMINAR:", err);
-            respuestas.error(req, res, err, 500); 
+            respuestas.error(req, res, err.message || err, 500); 
         });
 });
 

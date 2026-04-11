@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
-const auth = require('../auth/middleware');
+// const auth = require('../auth/middleware'); // Comentado por ahora
 
-// Gestión de Usuarios - Token comentado para pruebas
-router.get('/', /*auth.verificarToken,*/ controlador.listarUsuarios);
-router.post('/', /*auth.verificarToken,*/ controlador.crearUsuario);
-router.put('/:id', /*auth.verificarToken,*/ controlador.actualizarUsuario);
-router.delete('/:id', /*auth.verificarToken,*/ controlador.eliminarUsuario);
+router.get('/', controlador.listarUsuarios);
+router.post('/', controlador.crearUsuario);
+router.put('/:id', controlador.actualizarUsuario);
+router.delete('/:id', controlador.eliminarUsuario);
 
 module.exports = router;

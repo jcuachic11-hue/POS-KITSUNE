@@ -11,6 +11,8 @@
         input { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
         button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; }
         .btn-save { background: #28a745; color: white; width: 100%; font-weight: bold; }
+        .btn-edit { background: #ffc107; margin-right: 5px; }
+        .btn-delete { background: #dc3545; color: white; }
     </style>
 </head>
 <body>
@@ -19,22 +21,36 @@
     
     <form id="usuarioForm">
         <input type="hidden" id="id">
+        
         <label>Nombre Completo:</label>
         <input type="text" id="nombre" required>
+        
         <label>Usuario (Login):</label>
         <input type="text" id="usuario" required>
+        
         <label>Contraseña:</label>
         <input type="password" id="password" placeholder="Dejar vacío si no cambia">
+        
         <label>Rol:</label>
-        <input type="text" id="rol" placeholder="ej: admin" required>
+        <input type="text" id="rol" placeholder="ej: admin / empleado" required>
+        
         <label>Estado (1 Activo, 0 Inactivo):</label>
         <input type="number" id="estado" value="1" required>
+        
         <button type="submit" class="btn-save">Guardar Usuario</button>
+        <button type="button" onclick="limpiarFormulario()" style="width:100%; margin-top:10px; background:#6c757d; color:white">Cancelar / Nuevo</button>
     </form>
 
     <table id="usuariosTable">
         <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
         </thead>
         <tbody></tbody>
     </table>
@@ -49,6 +65,7 @@
                 const lista = data.body || [];
                 const tbody = document.querySelector('#usuariosTable tbody');
                 tbody.innerHTML = '';
+                
                 lista.forEach(u => {
                     tbody.innerHTML += `
                         <tr>
@@ -56,10 +73,10 @@
                             <td>${u.nombre}</td>
                             <td>${u.usuario}</td>
                             <td>${u.rol}</td>
-                            <td>${u.estado}</td>
+                            <td>${u.estado == 1 ? '✅ Activo' : '❌ Inactivo'}</td>
                             <td>
-                                <button style="background:#ffc107" onclick="prepararEdicion(${u.id}, '${u.nombre}', '${u.usuario}', '${u.rol}', ${u.estado})">Editar</button>
-                                <button style="background:#dc3545; color:white" onclick="eliminarUsuario(${u.id})">Borrar</button>
+                                <button class="btn-edit" onclick="prepararEdicion(${u.id}, '${u.nombre}', '${u.usuario}', '${u.rol}', ${u.estado})">Editar</button>
+                                <button class="btn-delete" onclick="eliminarUsuario(${u.id})">Borrar</button>
                             </td>
                         </tr>`;
                 });
@@ -68,18 +85,31 @@
 
         document.getElementById('usuarioForm').addEventListener('submit', async e => {
             e.preventDefault();
-            const id = document.getElementById('id').value;
+            
+            const idValue = document.getElementById('id').value;
+            
+            // Creamos el objeto base
             const datos = {
-                nombre: document.getElementById('nombre').value,
-                usuario: document.getElementById('usuario').value,
-                rol: document.getElementById('rol').value,
-                estado: document.getElementById('estado').value
+                nombre: document.getElementById('nombre').value.trim(),
+                usuario: document.getElementById('usuario').value.trim(),
+                rol: document.getElementById('rol').value.trim(),
+                estado: parseInt(document.getElementById('estado').value) // Forzar número
             };
-            const pass = document.getElementById('password').value;
-            if(pass.trim() !== "") datos.password = pass;
 
-            const method = id ? 'PUT' : 'POST';
-            const url = id ? `${API_URL}/${id}` : API_URL;
+            // Solo agregar ID si existe (para evitar enviar "" a MySQL)
+            if (idValue) {
+                datos.id = parseInt(idValue);
+            }
+
+            // Solo agregar password si el usuario escribió algo
+            const pass = document.getElementById('password').value;
+            if (pass.trim() !== "") {
+                datos.password = pass;
+            }
+
+            // Si hay ID usamos PUT, si no POST (Lógica REST)
+            const method = idValue ? 'PUT' : 'POST';
+            const url = idValue ? `${API_URL}/${idValue}` : API_URL;
 
             try {
                 const res = await fetch(url, {
@@ -87,14 +117,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datos)
                 });
-                if(res.ok) {
-                    document.getElementById('usuarioForm').reset();
-                    document.getElementById('id').value = '';
+                
+                const result = await res.json();
+
+                if(!result.error) {
+                    alert(idValue ? "Usuario actualizado" : "Usuario creado");
+                    limpiarFormulario();
                     cargarUsuarios();
                 } else {
-                    alert("Error en el servidor al guardar");
+                    alert("Error: " + result.body);
                 }
-            } catch (err) { console.error("Error en submit:", err); }
+            } catch (err) { 
+                console.error("Error en submit:", err);
+                alert("Error de conexión con el servidor");
+            }
         });
 
         function prepararEdicion(id, nombre, usuario, rol, estado) {
@@ -103,13 +139,21 @@
             document.getElementById('usuario').value = usuario;
             document.getElementById('rol').value = rol;
             document.getElementById('estado').value = estado;
+            document.getElementById('password').value = ''; // Password siempre vacío al editar por seguridad
             window.scrollTo(0,0);
         }
 
         async function eliminarUsuario(id) {
-            if(!confirm("¿Borrar usuario?")) return;
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-            cargarUsuarios();
+            if(!confirm("¿Deseas eliminar definitivamente a este usuario?")) return;
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if(res.ok) cargarUsuarios();
+            } catch (e) { console.error(e); }
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('usuarioForm').reset();
+            document.getElementById('id').value = '';
         }
 
         window.onload = cargarUsuarios;

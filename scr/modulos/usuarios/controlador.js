@@ -1,9 +1,9 @@
-const db = require('../../bd/mysql'); // Importamos tus funciones inteligentes
+const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
 
 const TABLA = 'usuarios';
 
-// Listar
+// Listar Usuarios
 exports.listarUsuarios = async (req, res) => {
     try {
         const items = await db.todos(TABLA);
@@ -13,27 +13,27 @@ exports.listarUsuarios = async (req, res) => {
     }
 };
 
-// Crear o Actualizar (Usando la misma lógica de productos)
+// Crear Usuario (POST)
 exports.crearUsuario = async (req, res) => {
     try {
-        // En productos usamos db.agregar(TABLA, req.body)
-        // Solo nos aseguramos de que el estado sea número
+        // En productos funcionó porque mandamos el body directo
+        // Solo aseguramos que el estado sea un número para MySQL
         if (req.body.estado) req.body.estado = parseInt(req.body.estado);
-        
+
+        // La función agregar del archivo mysql.js usa: INSERT INTO ?? SET ?
         await db.agregar(TABLA, req.body);
         
-        const mensaje = req.body.id ? 'Usuario actualizado' : 'Usuario creado';
-        respuestas.success(req, res, mensaje, 201);
+        respuestas.success(req, res, 'Usuario guardado', 201);
     } catch (err) {
-        respuestas.error(req, res, err.message, 500);
+        console.error("Error en MySQL:", err.sqlMessage || err);
+        respuestas.error(req, res, err.sqlMessage || 'Error al insertar', 500);
     }
 };
 
-// Como db.agregar ya hace el UPDATE si hay ID, 
-// podemos hacer que actualizarUsuario use la misma lógica
+// Actualizar Usuario (PUT)
 exports.actualizarUsuario = async (req, res) => {
     try {
-        // Le pegamos el ID de la URL al body para que db.agregar sepa que es UPDATE
+        // Para que db.agregar sepa que es UPDATE, el objeto debe tener el ID
         req.body.id = req.params.id;
         if (req.body.estado) req.body.estado = parseInt(req.body.estado);
 
@@ -44,7 +44,7 @@ exports.actualizarUsuario = async (req, res) => {
     }
 };
 
-// Eliminar
+// Eliminar Usuario
 exports.eliminarUsuario = async (req, res) => {
     try {
         await db.eliminar(TABLA, req.params.id);

@@ -4,29 +4,30 @@
     <meta charset="UTF-8">
     <title>Usuarios - POS Kitsune</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        form { background: #f9f9f9; padding: 20px; border-radius: 8px; max-width: 400px; }
+        form { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         input { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
-        .btn-save { background: #28a745; color: white; width: 100%; cursor: pointer; border: none; padding: 10px; }
+        button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; }
+        .btn-save { background: #28a745; color: white; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
-    <a href="dashboard.html">⬅ Volver</a>
+    <a href="dashboard.html" style="text-decoration: none;">⬅ Volver</a>
     <h2>Gestión de Usuarios</h2>
     
     <form id="usuarioForm">
         <input type="hidden" id="id">
-        <label>Nombre:</label>
+        <label>Nombre Completo:</label>
         <input type="text" id="nombre" required>
         <label>Usuario (Login):</label>
         <input type="text" id="usuario" required>
         <label>Contraseña:</label>
-        <input type="password" id="password" placeholder="Solo para cambios">
+        <input type="password" id="password" placeholder="Dejar vacío si no cambia">
         <label>Rol:</label>
-        <input type="text" id="rol" placeholder="admin / empleado" required>
-        <label>Estado (int):</label>
+        <input type="text" id="rol" placeholder="ej: admin" required>
+        <label>Estado (1 Activo, 0 Inactivo):</label>
         <input type="number" id="estado" value="1" required>
         <button type="submit" class="btn-save">Guardar Usuario</button>
     </form>
@@ -57,12 +58,12 @@
                             <td>${u.rol}</td>
                             <td>${u.estado}</td>
                             <td>
-                                <button onclick="editar('${u.id}','${u.nombre}','${u.usuario}','${u.rol}',${u.estado})">Editar</button>
-                                <button onclick="eliminar(${u.id})">Borrar</button>
+                                <button style="background:#ffc107" onclick="prepararEdicion(${u.id}, '${u.nombre}', '${u.usuario}', '${u.rol}', ${u.estado})">Editar</button>
+                                <button style="background:#dc3545; color:white" onclick="eliminarUsuario(${u.id})">Borrar</button>
                             </td>
                         </tr>`;
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error cargando tabla:", e); }
         }
 
         document.getElementById('usuarioForm').addEventListener('submit', async e => {
@@ -75,31 +76,38 @@
                 estado: document.getElementById('estado').value
             };
             const pass = document.getElementById('password').value;
-            if(pass) datos.password = pass;
+            if(pass.trim() !== "") datos.password = pass;
 
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${API_URL}/${id}` : API_URL;
 
-            await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-            document.getElementById('usuarioForm').reset();
-            document.getElementById('id').value = '';
-            cargarUsuarios();
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                if(res.ok) {
+                    document.getElementById('usuarioForm').reset();
+                    document.getElementById('id').value = '';
+                    cargarUsuarios();
+                } else {
+                    alert("Error en el servidor al guardar");
+                }
+            } catch (err) { console.error("Error en submit:", err); }
         });
 
-        function editar(id, nombre, usuario, rol, estado) {
+        function prepararEdicion(id, nombre, usuario, rol, estado) {
             document.getElementById('id').value = id;
             document.getElementById('nombre').value = nombre;
             document.getElementById('usuario').value = usuario;
             document.getElementById('rol').value = rol;
             document.getElementById('estado').value = estado;
+            window.scrollTo(0,0);
         }
 
-        async function eliminar(id) {
-            if(!confirm("¿Borrar?")) return;
+        async function eliminarUsuario(id) {
+            if(!confirm("¿Borrar usuario?")) return;
             await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
             cargarUsuarios();
         }

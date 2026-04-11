@@ -1,30 +1,19 @@
 <script>
-    // Usamos la ruta relativa directa. 
-    // Si tu index.js dice app.use('/productos', ...), esta ruta es la correcta.
     const API_URL = '/productos';
-    const token = localStorage.getItem('token');
 
-    // --- CARGAR PRODUCTOS ---
     async function cargarProductos() {
         try {
-            // Quitamos el Bearer Token momentáneamente para asegurar que cargue
             const res = await fetch(API_URL);
-            
-            if (!res.ok) {
-                console.error("Error al obtener productos:", res.status);
-                return;
-            }
-
             const data = await res.json();
-            // Accedemos a data.body porque tu respuestas.success lo envuelve así
+            
+            // IMPORTANTE: Accedemos a data.body porque así responde tu servidor
             const listaProductos = data.body || []; 
             
             const tbody = document.querySelector('#productosTable tbody');
-            if (!tbody) return;
             tbody.innerHTML = '';
             
             if (listaProductos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos en la base de datos.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos.</td></tr>';
                 return;
             }
 
@@ -44,14 +33,12 @@
                     </tr>`;
             });
         } catch (err) {
-            console.error("Error de conexión:", err);
+            console.error("Error al cargar:", err);
         }
     }
 
-    // --- GUARDAR O ACTUALIZAR ---
     document.getElementById('productoForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const id = document.getElementById('id').value;
         const producto = {
             nombre: document.getElementById('nombre').value,
@@ -62,7 +49,6 @@
         };
 
         try {
-            // IMPORTANTE: Enviamos a /productos/agregar
             const res = await fetch(`${API_URL}/agregar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -73,26 +59,20 @@
                 alert(id ? "Actualizado" : "Guardado");
                 limpiarFormulario();
                 cargarProductos();
-            } else {
-                alert("Error en el servidor al guardar");
             }
         } catch (err) {
             console.error("Error:", err);
         }
     });
 
-    // --- ELIMINAR ---
     async function eliminarProducto(id, nombre) {
         if (!confirm(`¿Eliminar ${nombre}?`)) return;
-
         try {
-            // IMPORTANTE: Enviamos a /productos/eliminar con método DELETE
             const res = await fetch(`${API_URL}/eliminar`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })
             });
-
             if (res.ok) {
                 alert('Eliminado');
                 cargarProductos();
@@ -117,6 +97,5 @@
         document.getElementById('id').value = '';
     }
 
-    // Ejecutar al cargar
     window.onload = cargarProductos;
 </script>

@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <title>Usuarios - POS Kitsune</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        form { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input, select { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
-        button { cursor: pointer; padding: 10px; border-radius: 4px; border: none; font-weight: bold; }
-        .btn-save { background: #28a745; color: white; width: 100%; }
-        .btn-edit { background: #ffc107; }
-        .btn-delete { background: #dc3545; color: white; }
+        form { background: #f9f9f9; padding: 20px; border-radius: 8px; max-width: 400px; }
+        input { width: 100%; padding: 8px; margin: 5px 0 15px; box-sizing: border-box; }
+        .btn-save { background: #28a745; color: white; width: 100%; cursor: pointer; border: none; padding: 10px; }
     </style>
 </head>
 <body>
@@ -23,26 +20,20 @@
         <input type="hidden" id="id">
         <label>Nombre:</label>
         <input type="text" id="nombre" required>
-        <label>Usuario:</label>
+        <label>Usuario (Login):</label>
         <input type="text" id="usuario" required>
         <label>Contraseña:</label>
-        <input type="password" id="password" placeholder="Solo para cambiar/crear">
+        <input type="password" id="password" placeholder="Solo para cambios">
         <label>Rol:</label>
-        <select id="rol">
-            <option value="admin">Admin</option>
-            <option value="empleado">Empleado</option>
-        </select>
-        <label>Estado:</label>
-        <select id="estado">
-            <option value="1">Activo</option>
-            <option value="0">Inactivo</option>
-        </select>
+        <input type="text" id="rol" placeholder="admin / empleado" required>
+        <label>Estado (int):</label>
+        <input type="number" id="estado" value="1" required>
         <button type="submit" class="btn-save">Guardar Usuario</button>
     </form>
 
     <table id="usuariosTable">
         <thead>
-            <tr><th>ID</th><th>Nombre</th><th>User</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody></tbody>
     </table>
@@ -64,10 +55,10 @@
                             <td>${u.nombre}</td>
                             <td>${u.usuario}</td>
                             <td>${u.rol}</td>
-                            <td>${u.estado == 1 ? '✅' : '❌'}</td>
+                            <td>${u.estado}</td>
                             <td>
-                                <button class="btn-edit" onclick="editar('${u.id}','${u.nombre}','${u.usuario}','${u.rol}',${u.estado})">Editar</button>
-                                <button class="btn-delete" onclick="eliminar(${u.id})">Borrar</button>
+                                <button onclick="editar('${u.id}','${u.nombre}','${u.usuario}','${u.rol}',${u.estado})">Editar</button>
+                                <button onclick="eliminar(${u.id})">Borrar</button>
                             </td>
                         </tr>`;
                 });

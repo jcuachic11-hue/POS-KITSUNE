@@ -3,7 +3,7 @@ const router = express.Router();
 const controlador = require('./controlador');
 const respuestas = require('../../red/respuestas');
 
-// GET /productos -> Lista todo
+// LISTAR
 router.get('/', (req, res) => {
     controlador.listarProductos()
         .then((items) => { 
@@ -14,23 +14,23 @@ router.get('/', (req, res) => {
         });
 });
 
-// POST /productos/agregar -> Guarda o Edita
+// AGREGAR / EDITAR
 router.post('/agregar', (req, res) => {
     controlador.guardarProducto(req.body)
         .then(() => { 
-            respuestas.success(req, res, 'Guardado correctamente', 201); 
+            respuestas.success(req, res, 'Operación exitosa', 201); 
         })
         .catch((err) => { 
             respuestas.error(req, res, err.message, 500); 
         });
 });
 
-// DELETE /productos/eliminar -> Borra de la DB
+// ELIMINAR
 router.delete('/eliminar', (req, res) => {
     const idParaEliminar = req.body.id; 
     controlador.eliminarProducto(idParaEliminar)
         .then(() => { 
-            respuestas.success(req, res, 'Eliminado con éxito', 200); 
+            respuestas.success(req, res, 'Producto eliminado', 200); 
         })
         .catch((err) => { 
             respuestas.error(req, res, err.message, 500); 

@@ -1,101 +1,185 @@
-<script>
-    const API_URL = '/productos';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos - POS Kitsune</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1 { color: #333; }
+        form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; display: inline-block; }
+        label { font-weight: bold; display: block; margin-top: 10px; }
+        input, textarea { display: block; margin-bottom: 10px; width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+        button { cursor: pointer; padding: 8px 12px; border-radius: 4px; font-weight: bold; border: none; margin-right: 5px; }
+        .btn-guardar { background-color: #28a745; color: white; }
+        .btn-eliminar { background-color: #dc3545; color: white; }
+        .btn-limpiar { background-color: #6c757d; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+    </style>
+</head>
+<body>
 
-    async function cargarProductos() {
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            
-            // IMPORTANTE: Accedemos a data.body porque así responde tu servidor
-            const listaProductos = data.body || []; 
-            
-            const tbody = document.querySelector('#productosTable tbody');
-            tbody.innerHTML = '';
-            
-            if (listaProductos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos.</td></tr>';
-                return;
+    <h1>🦊 Gestión de Productos - POS Kitsune</h1>
+
+    <form id="productoForm">
+        <h3>Agregar / Editar Producto</h3>
+        <input type="hidden" id="id">
+        
+        <label>Nombre:</label>
+        <input type="text" id="nombre" placeholder="Nombre del producto" required>
+        
+        <label>Descripción:</label>
+        <textarea id="descripcion" placeholder="Breve descripción"></textarea>
+        
+        <label>Precio:</label>
+        <input type="number" id="precio" step="0.01" placeholder="0.00" required>
+        
+        <label>Stock:</label>
+        <input type="number" id="stock" placeholder="Cantidad disponible" required>
+        
+        <label>Categoría:</label>
+        <input type="text" id="categoria" placeholder="Ej: Bebidas, Alimentos">
+        
+        <button type="submit" class="btn-guardar">Guardar Producto</button>
+        <button type="button" class="btn-limpiar" onclick="limpiarFormulario()">Cancelar / Limpiar</button>
+    </form>
+
+    <hr>
+
+    <table id="productosTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <script>
+        // La ruta base que definiste en index.js
+        const API_URL = '/productos';
+
+        // --- CARGAR PRODUCTOS (GET) ---
+        async function cargarProductos() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("Error en la red");
+                
+                const data = await res.json();
+                // IMPORTANTE: data.body contiene la lista de productos de MySQL
+                const listaProductos = data.body || []; 
+                
+                const tbody = document.querySelector('#productosTable tbody');
+                tbody.innerHTML = '';
+                
+                if (listaProductos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos registrados.</td></tr>';
+                    return;
+                }
+
+                listaProductos.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.nombre}</td>
+                            <td>${p.descripcion || ''}</td>
+                            <td>$${p.precio}</td>
+                            <td>${p.stock}</td>
+                            <td>${p.categoria || ''}</td>
+                            <td>
+                                <button onclick="prepararEdicion(${p.id}, '${p.nombre}', '${p.descripcion || ''}', ${p.precio}, ${p.stock}, '${p.categoria || ''}')">Editar</button>
+                                <button class="btn-eliminar" onclick="eliminarProducto(${p.id}, '${p.nombre}')">Eliminar</button>
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) {
+                console.error("Error al cargar productos:", err);
             }
-
-            listaProductos.forEach(p => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${p.id}</td>
-                        <td>${p.nombre}</td>
-                        <td>${p.descripcion || ''}</td>
-                        <td>$${p.precio}</td>
-                        <td>${p.stock}</td>
-                        <td>${p.categoria || ''}</td>
-                        <td>
-                            <button onclick="prepararEdicion(${p.id}, '${p.nombre}', '${p.descripcion || ''}', ${p.precio}, ${p.stock}, '${p.categoria || ''}')">Editar</button>
-                            <button class="btn-eliminar" onclick="eliminarProducto(${p.id}, '${p.nombre}')">Eliminar</button>
-                        </td>
-                    </tr>`;
-            });
-        } catch (err) {
-            console.error("Error al cargar:", err);
         }
-    }
 
-    document.getElementById('productoForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('id').value;
-        const producto = {
-            nombre: document.getElementById('nombre').value,
-            descripcion: document.getElementById('descripcion').value,
-            precio: parseFloat(document.getElementById('precio').value),
-            stock: parseInt(document.getElementById('stock').value),
-            categoria: document.getElementById('categoria').value
-        };
+        // --- GUARDAR O ACTUALIZAR (POST) ---
+        document.getElementById('productoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        try {
-            const res = await fetch(`${API_URL}/agregar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(id ? { ...producto, id: parseInt(id) } : producto)
-            });
+            const id = document.getElementById('id').value;
+            const producto = {
+                nombre: document.getElementById('nombre').value,
+                descripcion: document.getElementById('descripcion').value,
+                precio: parseFloat(document.getElementById('precio').value),
+                stock: parseInt(document.getElementById('stock').value),
+                categoria: document.getElementById('categoria').value
+            };
 
-            if (res.ok) {
-                alert(id ? "Actualizado" : "Guardado");
-                limpiarFormulario();
-                cargarProductos();
+            try {
+                // Enviamos a /productos/agregar. Si lleva ID, el backend hace el UPDATE.
+                const res = await fetch(`${API_URL}/agregar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(id ? { ...producto, id: parseInt(id) } : producto)
+                });
+
+                if (res.ok) {
+                    alert(id ? "✅ Producto actualizado correctamente" : "✅ Producto agregado con éxito");
+                    limpiarFormulario();
+                    cargarProductos();
+                } else {
+                    alert("❌ Error al procesar en el servidor");
+                }
+            } catch (err) {
+                console.error("Error al guardar:", err);
             }
-        } catch (err) {
-            console.error("Error:", err);
-        }
-    });
+        });
 
-    async function eliminarProducto(id, nombre) {
-        if (!confirm(`¿Eliminar ${nombre}?`)) return;
-        try {
-            const res = await fetch(`${API_URL}/eliminar`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
-            });
-            if (res.ok) {
-                alert('Eliminado');
-                cargarProductos();
+        // --- ELIMINAR (DELETE) ---
+        async function eliminarProducto(id, nombre) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar "${nombre}"?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/eliminar`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+
+                if (res.ok) {
+                    alert('🗑️ Producto eliminado físicamente de la base de datos');
+                    cargarProductos();
+                } else {
+                    alert('❌ No se pudo eliminar el producto');
+                }
+            } catch (err) {
+                console.error("Error al eliminar:", err);
             }
-        } catch (err) {
-            console.error("Error:", err);
         }
-    }
 
-    function prepararEdicion(id, nombre, desc, precio, stock, cat) {
-        document.getElementById('id').value = id;
-        document.getElementById('nombre').value = nombre;
-        document.getElementById('descripcion').value = desc;
-        document.getElementById('precio').value = precio;
-        document.getElementById('stock').value = stock;
-        document.getElementById('categoria').value = cat;
-        window.scrollTo(0,0);
-    }
+        // --- FUNCIONES DE APOYO ---
+        function prepararEdicion(id, nombre, desc, precio, stock, cat) {
+            document.getElementById('id').value = id;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('descripcion').value = desc;
+            document.getElementById('precio').value = precio;
+            document.getElementById('stock').value = stock;
+            document.getElementById('categoria').value = cat;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-    function limpiarFormulario() {
-        document.getElementById('productoForm').reset();
-        document.getElementById('id').value = '';
-    }
+        function limpiarFormulario() {
+            document.getElementById('productoForm').reset();
+            document.getElementById('id').value = '';
+        }
 
-    window.onload = cargarProductos;
-</script>
+        // Se ejecuta al cargar la página
+        window.onload = cargarProductos;
+    </script>
+</body>
+</html>

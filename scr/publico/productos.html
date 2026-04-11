@@ -1,18 +1,34 @@
 <script>
-    const API_URL = '/productos';
-    // Nota: El token se envía pero el backend ahora lo ignora (comentado allá)
+ 
+    const API_URL = window.location.origin + '/productos';
+    
     const token = localStorage.getItem('token');
 
     // --- CARGAR PRODUCTOS ---
     async function cargarProductos() {
+        console.log("Intentando cargar productos desde:", API_URL);
         try {
             const res = await fetch(API_URL);
+            
+            if (!res.ok) {
+                console.error("Error en respuesta del servidor:", res.status);
+                return;
+            }
+
             const data = await res.json();
+            // Validamos que data.body exista (estructura estándar de tu proyecto)
             const listaProductos = data.body || []; 
             
             const tbody = document.querySelector('#productosTable tbody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
+            if (listaProductos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay productos registrados</td></tr>';
+                return;
+            }
+
             listaProductos.forEach(p => {
                 tbody.innerHTML += `
                     <tr>
@@ -29,7 +45,7 @@
                     </tr>`;
             });
         } catch (err) {
-            console.error("Error al cargar:", err);
+            console.error("Error al cargar productos:", err);
         }
     }
 
@@ -46,9 +62,8 @@
             categoria: document.getElementById('categoria').value
         };
 
-        // TODO va a /agregar vía POST. 
-        // Si lleva ID, el backend hace UPDATE automáticamente.
         try {
+            // URL corregida para evitar doble diagonal
             const res = await fetch(`${API_URL}/agregar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -56,33 +71,35 @@
             });
 
             if (res.ok) {
-                alert(id ? "Producto actualizado" : "Producto agregado");
+                alert(id ? "✅ Producto actualizado" : "✅ Producto agregado");
                 limpiarFormulario();
-                cargarProductos();
+                await cargarProductos(); // Forzamos recarga
             } else {
-                alert("Error en el servidor");
+                const errorData = await res.json();
+                alert("❌ Error: " + (errorData.body || "Error en el servidor"));
             }
         } catch (err) {
             console.error("Error al guardar:", err);
+            alert("❌ Error de conexión");
         }
     });
 
     // --- ELIMINAR ---
     async function eliminarProducto(id, nombre) {
-        if (!confirm(`¿Deseas realmente eliminar ${nombre}?`)) return;
+        if (!confirm(`¿Realmente deseas eliminar "${nombre}"?`)) return;
 
         try {
             const res = await fetch(`${API_URL}/eliminar`, {
-                method: 'DELETE', // Coincide con el backend
+                method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id })
             });
 
             if (res.ok) {
-                alert('Producto eliminado correctamente');
-                cargarProductos();
+                alert('🗑️ Producto eliminado');
+                await cargarProductos();
             } else {
-                alert('Error al intentar eliminar');
+                alert('❌ No se pudo eliminar el producto');
             }
         } catch (err) {
             console.error("Error al eliminar:", err);
@@ -96,14 +113,9 @@
         document.getElementById('precio').value = precio;
         document.getElementById('stock').value = stock;
         document.getElementById('categoria').value = cat;
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function limpiarFormulario() {
         document.getElementById('productoForm').reset();
-        document.getElementById('id').value = '';
-    }
-
-    window.addEventListener("pageshow", cargarProductos);
-    cargarProductos();
-</script>
+        document.getElementById('id

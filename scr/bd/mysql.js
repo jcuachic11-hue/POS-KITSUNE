@@ -47,6 +47,21 @@ async function agregar(tabla, data) {
         return await pool.query(`INSERT INTO ?? SET ?`, [tabla, data]);
     }
 }
+
+async function restarStock(id, cantidad) {
+    return await pool.query(
+        `UPDATE productos SET stock = stock - ? WHERE id = ?`, 
+        [cantidad, id]
+    );
+}
+
+module.exports = {
+    todos,
+    uno,
+    agregar,
+    eliminar,
+    restarStock // <--- No olvides exportarla
+};
 async function eliminar(tabla, id) {
     return await pool.query(`DELETE FROM ?? WHERE id = ?`, [tabla, id]);
 }

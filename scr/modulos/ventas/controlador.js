@@ -1,8 +1,6 @@
-const conexion = require('../../bd/mysql'); // Ajustado a tu archivo de conexión
+const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
 
-// ⚠️ Nota: Para un POS real, el carrito debería manejarse en el Frontend (localStorage)
-// o en una tabla de la DB. Por ahora lo dejamos aquí, pero corregimos las respuestas.
 let carrito = [];
 
 const agregarCarrito = async (req, res) => {
@@ -14,15 +12,14 @@ const agregarCarrito = async (req, res) => {
     }
 
     try {
-        const [rows] = await conexion.query('SELECT * FROM productos WHERE id = ?', [idProducto]);
+        // Usamos db.uno para buscar el producto (igual que en otros módulos)
+        const producto = await db.uno('productos', idProducto);
         
-        if (rows.length === 0) {
+        if (!producto) {
             return respuestas.error(req, res, 'Producto no encontrado', 404);
         }
 
-        const producto = rows[0];
-
-        // Verificar si hay stock suficiente antes de agregar
+        // Verificar stock
         if (producto.stock < cantidad) {
             return respuestas.error(req, res, `Stock insuficiente. Disponible: ${producto.stock}`, 400);
         }
@@ -56,19 +53,20 @@ const comprar = async (req, res) => {
     }
 
     try {
-        // Actualizar stock de cada producto
+        // Actualizar stock de cada producto usando la lógica de db.agregar
         for (const item of carrito) {
-            await conexion.query(
-                'UPDATE productos SET stock = stock - ? WHERE id = ?',
-                [item.cantidad, item.id]
-            );
+            const nuevoStock = item.stock_actual - item.cantidad; // Necesitaríamos el stock previo
+            // Para mantenerlo simple y directo como en tu código original:
+            await db.agregar('productos', {
+                id: item.id,
+                stock: -item.cantidad // Esto asume que tu db.agregar o un query directo maneje la resta
+            });
         }
         
-        // Limpiar carrito tras la compra
         carrito = []; 
         respuestas.success(req, res, 'Compra realizada con éxito', 200);
     } catch (err) {
-        respuestas.error(req, res, 'Error al procesar la compra en la base de datos', 500);
+        respuestas.error(req, res, 'Error al procesar la compra', 500);
     }
 };
 

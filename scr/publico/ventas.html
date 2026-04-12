@@ -2,26 +2,47 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Módulo de Ventas</title>
-    <script>
-        const token = localStorage.getItem('token'); 
+    <title>Módulo de Ventas - POS Kitsune</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { padding: 8px; margin-right: 10px; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
+        #resultado { background: #333; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <a href="dashboard.html" style="text-decoration: none;">⬅ Volver</a>
+    <h1>Módulo de Ventas</h1>
 
+    <div class="card">
+        <h2>Agregar al carrito</h2>
+        <input type="number" id="idProducto" placeholder="ID Producto">
+        <input type="number" id="cantidad" value="1" min="1">
+        <button onclick="agregarCarrito()">Agregar Producto</button>
+    </div>
+
+    <div class="card">
+        <button onclick="listarCarrito()">Ver Carrito</button>
+        <button onclick="verTotales()">Ver Totales</button>
+        <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
+    </div>
+
+    <pre id="resultado">Esperando acciones...</pre>
+
+    <script>
         async function agregarCarrito() {
             const idProducto = document.getElementById('idProducto').value;
             const cantidad = document.getElementById('cantidad').value;
 
             const res = await fetch('/ventas/carrito', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idProducto, cantidad })
             });
             const data = await res.json();
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
             
-            // Limpiar input de producto para el siguiente
             if(!data.error) {
                 document.getElementById('idProducto').value = '';
                 document.getElementById('idProducto').focus();
@@ -29,56 +50,28 @@
         }
 
         async function listarCarrito() {
-            const res = await fetch('/ventas/carrito', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/ventas/carrito');
             const data = await res.json();
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
         }
 
         async function verTotales() {
-            const res = await fetch('/ventas/totales', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/ventas/totales');
             const data = await res.json();
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
         }
 
         async function comprar() {
-            if(!confirm("¿Confirmar la venta?")) return; // Seguridad extra
+            if(!confirm("¿Confirmar la venta?")) return;
 
-            const res = await fetch('/ventas/comprar', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/ventas/comprar', { method: 'POST' });
             const data = await res.json();
             
             if(!data.error) {
-                alert("¡Venta realizada con éxito!");
+                alert("¡Venta realizada!");
             }
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
         }
     </script>
-</head>
-<body>
-    <h1>Módulo de Ventas</h1>
-
-    <h2>Agregar producto al carrito</h2>
-    <label>ID Producto:</label>
-    <input type="text" id="idProducto">
-    <label>Cantidad:</label>
-    <input type="number" id="cantidad" value="1">
-    <button onclick="agregarCarrito()">Agregar</button>
-
-    <h2>Carrito</h2>
-    <button onclick="listarCarrito()">Ver Carrito</button>
-
-    <h2>Totales</h2>
-    <button onclick="verTotales()">Ver Totales</button>
-
-    <h2>Finalizar</h2>
-    <button onclick="comprar()" style="background-color: #4CAF50; color: white;">Comprar</button>
-
-    <pre id="resultado" style="background: #eee; padding: 10px; margin-top: 20px;"></pre>
 </body>
 </html>

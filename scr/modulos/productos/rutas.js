@@ -1,11 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
+const respuestas = require('../../red/respuestas');
 
-// Estas son las funciones que SÍ existen en tu controlador.js
-router.get('/', controlador.listarProductos);
-router.get('/:id', controlador.uno);
-router.post('/', controlador.guardarProducto);
-router.delete('/:id', controlador.eliminarProducto);
+// LISTAR
+router.get('/', (req, res) => {
+    controlador.listarProductos()
+        .then((items) => { 
+            respuestas.success(req, res, items, 200); 
+        })
+        .catch((err) => { 
+            respuestas.error(req, res, err, 500); 
+        });
+});
+
+// AGREGAR / EDITAR
+router.post('/agregar', (req, res) => {
+    controlador.guardarProducto(req.body)
+        .then(() => { 
+            respuestas.success(req, res, 'Operación exitosa', 201); 
+        })
+        .catch((err) => { 
+            respuestas.error(req, res, err.message, 500); 
+        });
+});
+
+// ELIMINAR
+router.delete('/eliminar', (req, res) => {
+    const idParaEliminar = req.body.id; 
+    controlador.eliminarProducto(idParaEliminar)
+        .then(() => { 
+            respuestas.success(req, res, 'Producto eliminado', 200);   
+        })
+        .catch((err) => { 
+            respuestas.error(req, res, err.message, 500); 
+        });
+});
 
 module.exports = router;

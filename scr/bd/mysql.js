@@ -24,7 +24,7 @@ async function uno(tabla, id) {
     return rows[0];
 }
 
-async function agregar(tabla, data) {
+/*async function agregar(tabla, data) {
     if (data && data.id) {
         // UPDATE: Si el objeto trae ID
         return await pool.query(`UPDATE ?? SET ? WHERE id = ?`, [tabla, data, data.id]);
@@ -33,7 +33,20 @@ async function agregar(tabla, data) {
         return await pool.query(`INSERT INTO ?? SET ?`, [tabla, data]);
     }
 }
+*/
 
+async function agregar(tabla, data) {
+    if (data && data.id) {
+        // Separamos el ID del resto de los datos para no actualizar la llave primaria
+        const { id, ...datosAActualizar } = data; 
+        
+        // UPDATE: Usamos solo los campos restantes (como stock)
+        return await pool.query(`UPDATE ?? SET ? WHERE id = ?`, [tabla, datosAActualizar, id]);
+    } else {
+        // INSERT: Si es un producto nuevo
+        return await pool.query(`INSERT INTO ?? SET ?`, [tabla, data]);
+    }
+}
 async function eliminar(tabla, id) {
     return await pool.query(`DELETE FROM ?? WHERE id = ?`, [tabla, id]);
 }

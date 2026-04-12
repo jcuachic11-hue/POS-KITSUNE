@@ -70,5 +70,6 @@ module.exports = {
     todos,
     uno,
     agregar,
-    eliminar
+    eliminar,
+    restarStock
 };

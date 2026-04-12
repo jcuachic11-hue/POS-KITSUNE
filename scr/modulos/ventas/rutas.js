@@ -8,4 +8,4 @@ router.get('/carrito', controlador.listarCarrito);
 router.get('/totales', controlador.totalesCarrito);
 router.post('/comprar', controlador.comprar);
 
-module.exports = router; // <--- SOLO ESTO al final
+module.exports = router; // 

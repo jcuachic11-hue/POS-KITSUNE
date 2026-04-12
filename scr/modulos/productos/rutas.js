@@ -14,6 +14,17 @@ router.get('/', (req, res) => {
         });
 });
 
+// CONSULTAR UNO (Añadido siguiendo tu estilo)
+router.get('/uno', (req, res) => {
+    controlador.uno(req.body.id)
+        .then((items) => { 
+            respuestas.success(req, res, items, 200); 
+        })
+        .catch((err) => { 
+            respuestas.error(req, res, err, 500); 
+        });
+});
+
 // AGREGAR / EDITAR
 router.post('/agregar', (req, res) => {
     controlador.guardarProducto(req.body)

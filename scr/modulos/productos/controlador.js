@@ -10,7 +10,7 @@ function uno(id) {
 }
 
 function guardarProducto(body) {
-    // En tu sistema, "agregar" sirve para INSERT y UPDATE
+    // Si el body trae id, db.agregar hará un UPDATE automáticamente
     return db.agregar(TABLA, body);
 }
 
@@ -19,6 +19,7 @@ function eliminarProducto(id) {
 }
 
 module.exports = {
+    id: (body) => body.id, // Campo id extraído del body si es necesario
     listarProductos,
     uno,
     guardarProducto,

@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
-// const auth = require('../auth/middleware'); // Comentado para facilitar pruebas
 
-router.post('/carrito', controlador.agregarCarrito);
-router.get('/carrito', controlador.listarCarrito);
-router.get('/totales', controlador.totalesCarrito);
-router.post('/comprar', controlador.comprar);
+// Estas son las funciones que SÍ existen en tu controlador.js
+router.get('/', controlador.listarProductos);
+router.get('/:id', controlador.uno);
+router.post('/', controlador.guardarProducto);
+router.delete('/:id', controlador.eliminarProducto);
 
 module.exports = router;

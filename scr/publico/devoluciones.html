@@ -4,26 +4,36 @@
   <meta charset="UTF-8">
   <title>Módulo de Devoluciones - POS Kitsune</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    form { margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; max-width: 400px; }
-    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    button { background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h2 { color: #333; margin-top: 0; }
+    form { display: flex; flex-direction: column; }
+    label { margin-top: 10px; font-weight: bold; color: #555; }
+    input { padding: 12px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+    button { padding: 12px; background: #1976d2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; }
     button:hover { background: #125a9c; }
-    .back-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #666; }
+    .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #1976d2; font-weight: bold; }
+    .back-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
- <a href="index.html" style="text-decoration: none; color: #666;">
-  <h2>🔄 Módulo de Devoluciones</h2>
-  <p>Registra una devolución para reintegrar stock:</p>
 
-  <form id="formDevolucion">
-    <label>ID Producto:</label>
-    <input type="text" id="productoId" placeholder="Ej: 101" required>
-    <label>Cantidad a devolver:</label>
-    <input type="number" id="cantidad" min="1" value="1" required>
-    <button type="submit">Registrar Devolución</button>
-  </form>
+  <div class="container">
+    <a href="index.html" class="back-link">⬅ Volver al Inicio</a>
+    
+    <h2>🔄 Devoluciones</h2>
+    <p>Ingresa los datos para reintegrar stock al inventario.</p>
+
+    <form id="formDevolucion">
+      <label for="productoId">ID del Producto:</label>
+      <input type="text" id="productoId" placeholder="Ej: 101" required>
+
+      <label for="cantidad">Cantidad a devolver:</label>
+      <input type="number" id="cantidad" min="1" value="1" required>
+
+      <button type="submit">Registrar Devolución</button>
+    </form>
+  </div>
 
   <script>
     document.getElementById("formDevolucion").addEventListener("submit", async e => {
@@ -31,6 +41,8 @@
 
       const productoId = document.getElementById("productoId").value;
       const cantidad = document.getElementById("cantidad").value;
+      
+      // Mantenemos el token aunque el servidor lo tenga comentado por ahora
       const token = localStorage.getItem("token");
 
       try {
@@ -40,20 +52,25 @@
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token
           },
-          body: JSON.stringify({ productoId, cantidad })
+          body: JSON.stringify({ 
+            productoId: productoId, 
+            cantidad: parseInt(cantidad) 
+          })
         });
 
         const data = await res.json();
 
-        // 💡 Ajustado para usar 'error: false' de tu archivo respuestas.js
+        // Verificamos la respuesta según tu respuestas.js (error: false)
         if (data.error === false) {
-          alert("✅ Éxito: " + (data.body || "Devolución registrada"));
+          const info = data.body;
+          alert(`✅ Éxito: ${info.mensaje}\nID: ${info.productoId}\nCantidad: ${info.cantidad}`);
           document.getElementById("formDevolucion").reset();
         } else {
-          alert("❌ Error: " + (data.body || "No se pudo procesar"));
+          alert("❌ Error: " + (data.body || "No se pudo procesar la devolución"));
         }
       } catch (err) {
-        alert("Error de conexión: " + err.message);
+        console.error("Error en el fetch:", err);
+        alert("Error de conexión con el servidor");
       }
     });
   </script>

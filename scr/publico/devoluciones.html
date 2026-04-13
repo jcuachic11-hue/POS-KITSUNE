@@ -42,7 +42,7 @@
       const productoId = document.getElementById("productoId").value;
       const cantidad = document.getElementById("cantidad").value;
       
-      // Mantenemos el token aunque el servidor lo tenga comentado por ahora
+      // token 
       const token = localStorage.getItem("token");
 
       try {
@@ -60,7 +60,7 @@
 
         const data = await res.json();
 
-        // Verificamos la respuesta según tu respuestas.js (error: false)
+        // verificar respuesta 
         if (data.error === false) {
           const info = data.body;
           alert(`✅ Éxito: ${info.mensaje}\nID: ${info.productoId}\nCantidad: ${info.cantidad}`);

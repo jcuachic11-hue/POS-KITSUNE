@@ -121,7 +121,7 @@
             };
 
             try {
-                // Enviamos a /productos/agregar. Si lleva ID, el backend hace el UPDATE.
+                // Enviar a /productos/agregar. Si lleva ID hacer update 
                 const res = await fetch(`${API_URL}/agregar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -140,7 +140,7 @@
             }
         });
 
-        // --- ELIMINAR (DELETE) ---
+        //  ELIMINAR 
         async function eliminarProducto(id, nombre) {
             if (!confirm(`¿Estás seguro de que deseas eliminar "${nombre}"?`)) return;
 
@@ -162,7 +162,7 @@
             }
         }
 
-        // --- FUNCIONES DE APOYO ---
+        //FUNCIONES extra
         function prepararEdicion(id, nombre, desc, precio, stock, cat) {
             document.getElementById('id').value = id;
             document.getElementById('nombre').value = nombre;
@@ -178,7 +178,7 @@
             document.getElementById('id').value = '';
         }
 
-        // Se ejecuta al cargar la página
+        // ejecutar al cargar la página
         window.onload = cargarProductos;
     </script>
 </body>

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador.js'); 
 
-// Solo le pasamos la bola al controlador
-router.post('/login', controlador.login);
+// Esta ruta es la que genera el token, así que va libre
+router.post('/', controlador.login); 
 
 module.exports = router;

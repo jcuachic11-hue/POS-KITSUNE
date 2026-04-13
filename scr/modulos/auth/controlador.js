@@ -1,40 +1,37 @@
-const conexion = require('../../bd/mysql'); 
+const db = require('../../bd/mysql'); // Importamos tu capa de base de datos
 const jwt = require('jsonwebtoken');
 const respuestas = require('../../red/respuestas');
 
 async function login(req, res) {
     const { usuario, password } = req.body;
     try {
-        const [rows] = await conexion.query(
-            'SELECT * FROM usuarios WHERE usuario = ?',
-            [usuario]
-        );
+        // ERROR ANTERIOR: conexion.query no existe aquí.
+        // SOLUCIÓN: Usamos db.uno para buscar al usuario por su nombre.
+        const user = await db.uno('usuarios', usuario);
 
-        if (rows.length === 0) {
+        if (!user) {
             return respuestas.error(req, res, 'Usuario no encontrado', 401);
         }
 
-        const user = rows[0];
-
-        // Comparación directa (sin bcrypt por ahora)
+        // Comparación de contraseña (texto plano)
         if (password !== user.password) {
             return respuestas.error(req, res, 'Contraseña incorrecta', 401);
         }
 
+        // Generar Token (Asegúrate que en Railway sea JWT_SECRET con W)
         const token = jwt.sign(
             { id: user.id, usuario: user.usuario, rol: user.rol },
             process.env.JWT_SECRET || 'clave_temporal',
             { expiresIn: '8h' }
         );
 
-        // Enviamos la respuesta estructurada que espera el HTML
+        // Respuesta que espera tu login.html
         respuestas.success(req, res, { token, usuario: user.usuario }, 200);
 
-   } catch (error) {
-    // ESTO ES VITAL: Imprime el error real en la consola de Railway
-    console.error("DETALLE DEL ERROR EN LOGIN:", error); 
-    respuestas.error(req, res, 'Error interno: ' + error.message, 500);
-}
+    } catch (error) {
+        console.error("Error detallado en login:", error);
+        respuestas.error(req, res, 'Error interno: ' + error.message, 500);
+    }
 }
 
 module.exports = { login };

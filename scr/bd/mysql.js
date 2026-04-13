@@ -26,7 +26,8 @@ async function todos(tabla) {
 }
 */
 async function uno(tabla, id) {
-    // Esto evita que MySQL truene al recibir un nombre en lugar de un número
+    // Si el id es texto (como "Admin09"), busca en la columna usuario. 
+    // Si es número, busca en id.
     const columna = isNaN(id) ? 'usuario' : 'id';
     const [rows] = await pool.query(`SELECT * FROM ?? WHERE ?? = ?`, [tabla, columna, id]);
     return rows[0];

@@ -30,9 +30,11 @@ async function login(req, res) {
         // Enviamos la respuesta estructurada que espera el HTML
         respuestas.success(req, res, { token, usuario: user.usuario }, 200);
 
-    } catch (error) {
-        respuestas.error(req, res, 'Error interno', 500);
-    }
+   } catch (error) {
+    // ESTO ES VITAL: Imprime el error real en la consola de Railway
+    console.error("DETALLE DEL ERROR EN LOGIN:", error); 
+    respuestas.error(req, res, 'Error interno: ' + error.message, 500);
+}
 }
 
 module.exports = { login };

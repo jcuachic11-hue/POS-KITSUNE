@@ -13,7 +13,8 @@ const dbConfig = {
 
 const pool = mysql.createPool(dbConfig);
 
-// Estas funciones ahora sí existen y el controlador las puede llamar
+// --- FUNCIONES GENERALES ---
+
 async function todos(tabla) {
     const [rows] = await pool.query(`SELECT * FROM ??`, [tabla]);
     return rows;
@@ -24,29 +25,22 @@ async function uno(tabla, id) {
     return rows[0];
 }
 
-/*async function agregar(tabla, data) {
-    if (data && data.id) {
-        // UPDATE: Si el objeto trae ID
-        return await pool.query(`UPDATE ?? SET ? WHERE id = ?`, [tabla, data, data.id]);
-    } else {
-        // INSERT: Si es un producto nuevo
-        return await pool.query(`INSERT INTO ?? SET ?`, [tabla, data]);
-    }
-}
-*/
-
 async function agregar(tabla, data) {
     if (data && data.id) {
-        // Separamos el ID del resto de los datos para no actualizar la llave primaria
+        // UPDATE
         const { id, ...datosAActualizar } = data; 
-        
-        // UPDATE: Usamos solo los campos restantes (como stock)
         return await pool.query(`UPDATE ?? SET ? WHERE id = ?`, [tabla, datosAActualizar, id]);
     } else {
-        // INSERT: Si es un producto nuevo
+        // INSERT
         return await pool.query(`INSERT INTO ?? SET ?`, [tabla, data]);
     }
 }
+
+async function eliminar(tabla, id) {
+    return await pool.query(`DELETE FROM ?? WHERE id = ?`, [tabla, id]);
+}
+
+// --- FUNCIONES DE STOCK (VENTAS Y DEVOLUCIONES) ---
 
 async function restarStock(id, cantidad) {
     return await pool.query(
@@ -55,21 +49,20 @@ async function restarStock(id, cantidad) {
     );
 }
 
-module.exports = {
-    todos,
-    uno,
-    agregar,
-    eliminar,
-    restarStock // <--- No olvides exportarla
-};
-async function eliminar(tabla, id) {
-    return await pool.query(`DELETE FROM ?? WHERE id = ?`, [tabla, id]);
+async function sumarStock(id, cantidad) {
+    return await pool.query(
+        `UPDATE productos SET stock = stock + ? WHERE id = ?`, 
+        [cantidad, id]
+    );
 }
+
+// --- EXPORTACIÓN ÚNICA (AL FINAL) ---
 
 module.exports = {
     todos,
     uno,
     agregar,
     eliminar,
-    restarStock
+    restarStock,
+    sumarStock
 };

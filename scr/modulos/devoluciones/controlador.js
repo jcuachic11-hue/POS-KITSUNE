@@ -1,31 +1,36 @@
-const conexion = require('../../bd/mysql');
+const db = require('../../bd/mysql');
+const respuestas = require('../../red/respuestas');
 
 async function devolverProducto(req, res) {
-  const { productoId, cantidad } = req.body;
-  try {
-    if (!productoId || !cantidad) {
-      return res.status(400).json({ error: 'Faltan datos: productoId o cantidad' });
+    // Leemos exactamente lo que manda tu HTML
+    const { productoId, cantidad } = req.body;
+
+    try {
+        if (!productoId || !cantidad) {
+            return respuestas.error(req, res, 'Faltan datos: productoId o cantidad', 400);
+        }
+
+        // Ejecutamos la suma en el stock (la función que ya pusimos en mysql.js)
+        await db.sumarStock(productoId, cantidad);
+
+        return respuestas.success(req, res, {
+            productoId,
+            cantidad,
+            mensaje: 'Stock reintegrado correctamente'
+        }, 200);
+
+    } catch (err) {
+        console.error('Error en proceso de devolución:', err);
+        return respuestas.error(req, res, 'Error interno: ' + err.message, 500);
     }
-
-    // Actualizar stock directamente en productos
-    await conexion.query('UPDATE productos SET stock = stock + ? WHERE id = ?', [cantidad, productoId]);
-
-    // En lugar de insertar en una tabla devoluciones, solo devolvemos confirmación
-    return res.json({
-      ok: true,
-      productoId,
-      cantidad,
-      mensaje: 'Devolución registrada (sin historial en BD)'
-    });
-  } catch (err) {
-    console.error('Error devolverProducto:', err);
-    return res.status(500).json({ ok: false, error: err.message });
-  }
 }
 
 async function listarDevoluciones(req, res) {
-  // Como no hay tabla devoluciones, devolvemos un arreglo vacío o un mensaje
-  return res.json({ ok: true, devoluciones: [], mensaje: 'Historial no disponible en este módulo' });
+    // Historial vacío por ahora
+    return respuestas.success(req, res, [], 200);
 }
 
-module.exports = { devolverProducto, listarDevoluciones };
+module.exports = { 
+    devolverProducto, 
+    listarDevoluciones 
+};

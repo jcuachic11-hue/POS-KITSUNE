@@ -1,7 +1,5 @@
 const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
-// Importamos el pool directamente para hacer la consulta exacta sin pasar por la lógica de 'uno'
-const mysql = require('mysql2/promise'); 
 
 let carrito = []; 
 
@@ -9,45 +7,47 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
-        // 1. Obtener producto (esto funciona bien porque el ID es número)
-        const producto = await db.uno('productos', idProducto);
+        // Convertimos a Int para que db.uno no busque en la columna 'usuario'
+        const idLimpio = parseInt(idProducto);
+        const producto = await db.uno('productos', idLimpio);
+        
         if (!producto) return respuestas.error(req, res, 'Producto no encontrado', 404);
 
         let precioBase = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // 2. BUSCAR PROMO (Corregido para no usar db.uno)
+        // BÚSQUEDA DE PROMO
         if (codigoPromo && codigoPromo.trim() !== "") {
-            // Buscamos directamente en la tabla promociones donde el código coincida
-            // Usamos db.todos o una consulta directa para saltarnos el error de la columna 'usuario'
             const todasPromos = await db.todos('promociones');
-            const promoEncontrada = todasPromos.find(p => p.codigo === codigoPromo.trim());
+            const promoEncontrada = todasPromos.find(p => 
+                p.codigo.toLowerCase() === codigoPromo.trim().toLowerCase()
+            );
 
             if (promoEncontrada) {
-                // Aquí usamos 'valor'. Si tu columna se llama diferente, cámbialo aquí.
+                // Usamos la columna 'valor' de tu tabla promociones
                 porcentajeDescuento = parseFloat(promoEncontrada.valor || 0);
             }
         }
 
-        // 3. LA RESTA
-        const precioVenta = precioBase - (precioBase * (porcentajeDescuento / 100));
-        const subtotal = precioVenta * parseInt(cantidad);
+        // LA RESTA: Se aplica directamente al precio base
+        const precioVenta = precioBase * (1 - (porcentajeDescuento / 100));
+        const subtotalCalculado = precioVenta * parseInt(cantidad);
 
         const nuevoItem = {
-            id: idProducto,
+            id: idLimpio,
             nombre: producto.nombre,
             precioOriginal: precioBase,
             precioVenta: precioVenta, 
             descuento: porcentajeDescuento,
             cantidad: parseInt(cantidad),
-            subtotal: subtotal 
+            subtotal: subtotalCalculado 
         };
         
         carrito.push(nuevoItem);
         return respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        console.error(err);
+        console.error("Error en agregarCarrito:", err);
         return respuestas.error(req, res, 'Error interno', 500);
     }
 }
@@ -57,20 +57,31 @@ function listarCarrito(req, res) {
 }
 
 function totalesCarrito(req, res) {
-    const total = carrito.reduce((acc, item) => acc + item.subtotal, 0);
-    respuestas.success(req, res, { items: carrito.length, total: total.toFixed(2) }, 200);
+    const totalVenta = carrito.reduce((acc, item) => acc + item.subtotal, 0);
+    respuestas.success(req, res, { 
+        items: carrito.length, 
+        total: totalVenta.toFixed(2) 
+    }, 200);
 }
 
 async function comprar(req, res) {
     try {
+        if (carrito.length === 0) return respuestas.error(req, res, 'Carrito vacío', 400);
+        
         for (const item of carrito) {
             await db.restarStock(item.id, item.cantidad);
         }
+        
         carrito = []; 
-        respuestas.success(req, res, 'Venta finalizada', 200);
+        respuestas.success(req, res, 'Venta realizada con éxito', 200);
     } catch (err) {
         respuestas.error(req, res, err.message, 500);
     }
 }
 
-module.exports = { agregarCarrito, listarCarrito, totalesCarrito, comprar };
+module.exports = { 
+    agregarCarrito, 
+    listarCarrito, 
+    totalesCarrito, 
+    comprar 
+};

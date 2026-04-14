@@ -1,126 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Ventas - POS Kitsune</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; }
-        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #333; color: white; }
-        .total-box { font-size: 1.8rem; font-weight: bold; text-align: right; color: #28a745; margin-top: 10px; }
-        .promo-tag { color: #d9534f; font-weight: bold; font-size: 0.85em; margin-left: 5px; }
-    </style>
-</head>
-<body>
-    <a href="dashboard.html" style="text-decoration: none;">⬅ Volver</a>
-    <h1>Módulo de Ventas</h1>
+function actualizarInterfaz(carrito) {
+    const tbody = document.querySelector('#tablaResumen tbody');
+    tbody.innerHTML = ""; // Limpiamos la tabla antes de renderizar
 
-    <div class="card">
-        <div id="contenedor-filas">
-            <div class="fila-producto">
-                <input type="number" class="idProducto" placeholder="ID Producto">
-                <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Código Promo">
-                <button onclick="this.parentElement.remove()" style="background:#dc3545">X</button>
-            </div>
-        </div>
-        <br>
-        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Fila</button>
-        <button onclick="procesarVenta()" style="background:#17a2b8;">Cargar y Aplicar</button>
-        <button onclick="comprar()" style="background:#28a745; float: right;">Finalizar Venta</button>
-    </div>
+    if (!carrito || carrito.length === 0) return;
 
-    <div id="resumenVenta" class="card" style="display:none;">
-        <table id="tablaResumen">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Precio Unit.</th>
-                    <th>Cant.</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <div id="granTotal" class="total-box"></div>
-    </div>
+    carrito.forEach(item => {
+        // La resta ya viene calculada del servidor en item.precioVenta
+        const fila = `
+            <tr>
+                <td>${item.nombre}</td>
+                <td>
+                    $${parseFloat(item.precioVenta).toFixed(2)}
+                    ${item.descuento > 0 ? `<br><small style="color:red">(-${item.descuento}%)</small>` : ''}
+                </td>
+                <td>${item.cantidad}</td>
+                <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
+            </tr>`;
+        tbody.innerHTML += fila;
+    });
 
-    <script>
-        function agregarFilaInput() {
-            const div = document.createElement('div');
-            div.className = 'fila-producto';
-            div.innerHTML = `
-                <input type="number" class="idProducto" placeholder="ID Producto">
-                <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Código Promo">
-                <button onclick="this.parentElement.remove()" style="background:#dc3545">X</button>`;
-            document.getElementById('contenedor-filas').appendChild(div);
-        }
+    // Calculamos el Gran Total sumando los subtotales ya restados
+    const totalFinal = carrito.reduce((acc, i) => acc + parseFloat(i.subtotal), 0);
+    
+    document.getElementById('granTotal').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
+    document.getElementById('resumenVenta').style.display = 'block';
+}
 
-        async function procesarVenta() {
-            // Limpiar carrito en el servidor antes de empezar
-            await fetch('/ventas/limpiar', { method: 'POST' });
+// Asegúrate de que tu función procesarVenta llame a actualizarInterfaz al final
+async function procesarVenta() {
+    const filas = document.querySelectorAll('.fila-producto');
+    
+    // Opcional: Podrías añadir un fetch para limpiar el carrito aquí si quieres fresh start
+    
+    for (let fila of filas) {
+        const idProducto = fila.querySelector('.idProducto').value;
+        const cantidad = fila.querySelector('.cantidad').value;
+        const codigoPromo = fila.querySelector('.promo').value;
 
-            const filas = document.querySelectorAll('.fila-producto');
-            for (let fila of filas) {
-                const idProducto = fila.querySelector('.idProducto').value;
-                const cantidad = fila.querySelector('.cantidad').value;
-                const codigoPromo = fila.querySelector('.promo').value;
-
-                if (idProducto) {
-                    await fetch('/ventas/carrito', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ idProducto, cantidad, codigoPromo })
-                    });
-                }
-            }
-            
-            // Refrescar la interfaz
-            const res = await fetch('/ventas/carrito');
-            const data = await res.json();
-            actualizarInterfaz(data.body);
-        }
-
-        function actualizarInterfaz(carrito) {
-            const tbody = document.querySelector('#tablaResumen tbody');
-            tbody.innerHTML = ""; 
-
-            if (!carrito || carrito.length === 0) return;
-
-            carrito.forEach(item => {
-                const subtotal = parseFloat(item.subtotal);
-                const fila = `
-                    <tr>
-                        <td>
-                            ${item.nombre} 
-                            ${item.descuento > 0 ? `<span class="promo-tag">(-${item.descuento}%)</span>` : ''}
-                        </td>
-                        <td>$${parseFloat(item.precioVenta).toFixed(2)}</td>
-                        <td>${item.cantidad}</td>
-                        <td>$${subtotal.toFixed(2)}</td>
-                    </tr>`;
-                tbody.innerHTML += fila;
+        if (idProducto) {
+            await fetch('/ventas/carrito', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idProducto, cantidad, codigoPromo })
             });
-
-            const totalFinal = carrito.reduce((acc, i) => acc + parseFloat(i.subtotal), 0);
-            document.getElementById('granTotal').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
-            document.getElementById('resumenVenta').style.display = 'block';
         }
-
-        async function comprar() {
-            if(!confirm("¿Finalizar venta?")) return;
-            const res = await fetch('/ventas/comprar', { method: 'POST' });
-            if(res.ok) { 
-                alert("Venta Realizada con éxito"); 
-                location.reload(); 
-            }
-        }
-    </script>
-</body>
-</html>
+    }
+    
+    // Obtener los datos actualizados del servidor
+    const res = await fetch('/ventas/carrito');
+    const data = await res.json();
+    actualizarInterfaz(data.body);
+}

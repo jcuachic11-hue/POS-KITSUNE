@@ -6,17 +6,15 @@
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
         .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
         input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
-        .btn-add { background: #6c757d; }
-        .btn-del { background: #dc3545; padding: 8px 12px; }
-        
-        /* Estilos para la tabla de visualización */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #333; color: white; }
-        .total-section { font-size: 1.5rem; font-weight: bold; text-align: right; margin-top: 15px; color: #28a745; }
+        .btn-del { background: #dc3545; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #333; color: white; }
+        .total-box { font-size: 1.8rem; font-weight: bold; text-align: right; color: #28a745; margin-top: 10px; }
+        .badge-promo { background: #ffc107; color: #000; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -24,34 +22,35 @@
     <h1>Módulo de Ventas</h1>
 
     <div class="card">
-        <h2>Productos</h2>
+        <h2>Ingreso de Productos</h2>
         <div id="contenedor-filas">
             <div class="fila-producto">
-                <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
-                <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
+                <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
+                <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
+                <input type="text" class="promo" placeholder="Código Promo" style="width: 110px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             </div>
         </div>
-        <button class="btn-add" onclick="agregarFilaInput()">+ Añadir Fila</button>
-        <hr>
-        <button onclick="procesarVentaCompleta()" style="background: #17a2b8;">Cargar y Ver Resumen</button>
-        <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
+        <br>
+        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Fila</button>
+        <button onclick="procesarVenta()" style="background:#17a2b8;">Cargar Productos</button>
+        <button onclick="comprar()" style="background:#28a745; float: right;">Finalizar Venta</button>
     </div>
 
     <div id="resumenVenta" class="card" style="display:none;">
-        <h3>Resumen de la Venta</h3>
+        <h3>Resumen de Cobro</h3>
         <table id="tablaResumen">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Precio Unit.</th>
+                    <th>Precio</th>
                     <th>Cant.</th>
                     <th>Subtotal</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <div id="granTotal" class="total-section"></div>
+        <div id="granTotal" class="total-box"></div>
     </div>
 
     <script>
@@ -59,8 +58,9 @@
             const div = document.createElement('div');
             div.className = 'fila-producto';
             div.innerHTML = `
-                <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
-                <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
+                <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
+                <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
+                <input type="text" class="promo" placeholder="Código Promo" style="width: 110px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             `;
             document.getElementById('contenedor-filas').appendChild(div);
@@ -71,43 +71,45 @@
             if (filas.length > 1) btn.parentElement.remove();
         }
 
-        async function procesarVentaCompleta() {
+        async function procesarVenta() {
             const filas = document.querySelectorAll('.fila-producto');
+            // Nota: En una versión real aquí podrías llamar a un fetch para limpiar el carrito actual
             
-            // Procesamos cada fila enviándola al carrito del servidor
             for (let fila of filas) {
                 const idProducto = fila.querySelector('.idProducto').value;
                 const cantidad = fila.querySelector('.cantidad').value;
+                const codigoPromo = fila.querySelector('.promo').value;
 
                 if (idProducto) {
                     await fetch('/ventas/carrito', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ idProducto, cantidad })
+                        body: JSON.stringify({ idProducto, cantidad, codigoPromo })
                     });
                 }
             }
-            // Una vez cargados, actualizamos la tabla visual
-            actualizarInterfaz();
+            mostrarResumen();
         }
 
-        async function actualizarInterfaz() {
+        async function mostrarResumen() {
             const res = await fetch('/ventas/carrito');
             const data = await res.json();
             const carrito = data.body;
 
-            if (carrito.length > 0) {
+            if (carrito && carrito.length > 0) {
                 const tbody = document.querySelector('#tablaResumen tbody');
                 tbody.innerHTML = carrito.map(item => `
                     <tr>
-                        <td>${item.nombre}</td>
-                        <td>$${item.precio}</td>
+                        <td>
+                            ${item.nombre} 
+                            ${item.descuento > 0 ? `<span class="badge-promo">-${item.descuento}%</span>` : ''}
+                        </td>
+                        <td>$${item.precioVenta.toFixed(2)}</td>
                         <td>${item.cantidad}</td>
-                        <td>$${item.subtotal}</td>
+                        <td>$${item.subtotal.toFixed(2)}</td>
                     </tr>
                 `).join('');
 
-                // Calculamos el total
                 const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
                 document.getElementById('granTotal').innerText = `TOTAL: $${total.toFixed(2)}`;
                 document.getElementById('resumenVenta').style.display = 'block';
@@ -115,14 +117,11 @@
         }
 
         async function comprar() {
-            if(!confirm("¿Confirmar cobro y finalizar?")) return;
-
+            if(!confirm("¿Desea cerrar la venta?")) return;
             const res = await fetch('/ventas/comprar', { method: 'POST' });
-            const data = await res.json();
-            
-            if(!data.error) {
-                alert("¡Venta Realizada!");
-                location.reload(); 
+            if(res.ok) {
+                alert("Venta Exitosa");
+                location.reload();
             }
         }
     </script>

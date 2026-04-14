@@ -1,5 +1,7 @@
 const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
+// Importamos el pool directamente para hacer la consulta exacta sin pasar por la lógica de 'uno'
+const mysql = require('mysql2/promise'); 
 
 let carrito = []; 
 
@@ -7,27 +9,27 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
+        // 1. Obtener producto (esto funciona bien porque el ID es número)
         const producto = await db.uno('productos', idProducto);
-        if (!producto) {
-            return respuestas.error(req, res, 'Producto no encontrado', 404);
-        }
+        if (!producto) return respuestas.error(req, res, 'Producto no encontrado', 404);
 
         let precioBase = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // BÚSQUEDA DE PROMO
+        // 2. BUSCAR PROMO (Corregido para no usar db.uno)
         if (codigoPromo && codigoPromo.trim() !== "") {
-            try {
-                const promos = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
-                if (promos && promos.length > 0) {
-                    porcentajeDescuento = parseFloat(promos[0].valor);
-                }
-            } catch (err) {
-                console.log("Error en DB promociones");
+            // Buscamos directamente en la tabla promociones donde el código coincida
+            // Usamos db.todos o una consulta directa para saltarnos el error de la columna 'usuario'
+            const todasPromos = await db.todos('promociones');
+            const promoEncontrada = todasPromos.find(p => p.codigo === codigoPromo.trim());
+
+            if (promoEncontrada) {
+                // Aquí usamos 'valor'. Si tu columna se llama diferente, cámbialo aquí.
+                porcentajeDescuento = parseFloat(promoEncontrada.valor || 0);
             }
         }
 
-        // LA RESTA MATEMÁTICA
+        // 3. LA RESTA
         const precioVenta = precioBase - (precioBase * (porcentajeDescuento / 100));
         const subtotal = precioVenta * parseInt(cantidad);
 
@@ -42,8 +44,6 @@ async function agregarCarrito(req, res) {
         };
         
         carrito.push(nuevoItem);
-
-        // IMPORTANTE: Esto es lo que hace que el botón no se quede "colgado"
         return respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
@@ -53,24 +53,23 @@ async function agregarCarrito(req, res) {
 }
 
 function listarCarrito(req, res) {
-    return respuestas.success(req, res, carrito, 200);
+    respuestas.success(req, res, carrito, 200);
 }
 
 function totalesCarrito(req, res) {
     const total = carrito.reduce((acc, item) => acc + item.subtotal, 0);
-    return respuestas.success(req, res, { items: carrito.length, total: total.toFixed(2) }, 200);
+    respuestas.success(req, res, { items: carrito.length, total: total.toFixed(2) }, 200);
 }
 
 async function comprar(req, res) {
     try {
-        if (carrito.length === 0) return respuestas.error(req, res, 'Vacío', 400);
         for (const item of carrito) {
             await db.restarStock(item.id, item.cantidad);
         }
         carrito = []; 
-        return respuestas.success(req, res, 'Venta OK', 200);
+        respuestas.success(req, res, 'Venta finalizada', 200);
     } catch (err) {
-        return respuestas.error(req, res, err.message, 500);
+        respuestas.error(req, res, err.message, 500);
     }
 }
 

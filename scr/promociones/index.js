@@ -1,3 +1,3 @@
-const promociones = require('./modulos/promociones/rutas');
-// ... debajo de las otras rutas
+const promociones = require('./rutas');
+
 app.use('/promociones', promociones);

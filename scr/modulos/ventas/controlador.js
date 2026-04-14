@@ -13,20 +13,19 @@ async function agregarCarrito(req, res) {
         let precioBase = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // BÚSQUEDA DE LA PROMO
+        // BÚSQUEDA DE PROMO
         if (codigoPromo && codigoPromo.trim() !== "") {
             try {
-                // Buscamos en la columna 'codigo'
                 const promos = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
                 if (promos && promos.length > 0) {
                     porcentajeDescuento = parseFloat(promos[0].valor);
                 }
             } catch (err) {
-                console.log("Error en consulta de promo:", err.message);
+                console.log("Error en promo, siguiendo sin descuento.");
             }
         }
 
-        // --- OPERACIÓN DE LA RESTA ---
+        // --- LA RESTA ---
         const precioConDescuento = precioBase * (1 - (porcentajeDescuento / 100));
         const subtotalCalculado = precioConDescuento * parseInt(cantidad);
 
@@ -42,18 +41,16 @@ async function agregarCarrito(req, res) {
         
         carrito.push(nuevoItem);
         return respuestas.success(req, res, nuevoItem, 201);
-
     } catch (err) {
         return respuestas.error(req, res, 'Error interno', 500);
     }
 }
 
-// Esta función debe llamarse exactamente como la pide tu archivo de rutas
+// Esta función es la que pide tu rutas.js en la línea 8
 async function todos(req, res) {
     respuestas.success(req, res, carrito, 200);
 }
 
-// Función para limpiar el carrito (opcional, pero recomendada)
 async function eliminar(req, res) {
     carrito = [];
     respuestas.success(req, res, 'Carrito vaciado', 200);
@@ -72,12 +69,10 @@ async function comprar(req, res) {
     }
 }
 
-// REVISA AQUÍ: He puesto los nombres más comunes que suelen tener las rutas
+// --- EXPORTS CORREGIDOS PARA NO CRASHEAR ---
 module.exports = {
-    agregar: agregarCarrito, // Si tu ruta dice .post('/', controlador.agregar)
-    agregarCarrito,          // Por si acaso
-    todos,                   // Esta es la que probablemente busca el .get('/')
-    listarCarrito: todos,    // Alias por si acaso
-    eliminar, 
-    comprar
+    todos,          // Para la línea 8 de tus rutas
+    agregarCarrito, // Para el POST
+    comprar,        // Para finalizar
+    eliminar        // Por si tus rutas lo piden como 'eliminar'
 };

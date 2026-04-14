@@ -7,34 +7,40 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
+        // 1. Buscamos el producto por su ID
         const producto = await db.uno('productos', idProducto);
         if (!producto) {
             return respuestas.error(req, res, 'Producto no encontrado', 404);
         }
 
-        let precioOriginal = producto.precio;
+        let precioOriginal = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
-        let precioConDescuento = precioOriginal;
 
-        // --- LÓGICA DE DESCUENTO ---
+        // 2. BUSQUEDA POR CÓDIGO (Consulta Directa)
         if (codigoPromo && codigoPromo.trim() !== "") {
-            const promo = await db.uno('promociones', codigoPromo);
+            // Buscamos en la tabla promociones donde la columna 'codigo' coincida
+            // Si tu columna se llama diferente (ej: 'nombre'), cámbialo aquí abajo:
+            const queryPromo = 'SELECT * FROM promociones WHERE codigo = ?';
+            const resultados = await db.query(queryPromo, [codigoPromo.trim()]);
             
-            if (promo && promo.valor) {
-                porcentajeDescuento = parseFloat(promo.valor); // Ejemplo: 15
-                // Operación matemática: Precio - (Precio * 0.15)
-                const montoDescuento = precioOriginal * (porcentajeDescuento / 100);
-                precioConDescuento = precioOriginal - montoDescuento;
-                
-                console.log(`Promo aplicada: ${codigoPromo} (-${porcentajeDescuento}%)`);
+            if (resultados.length > 0) {
+                const promo = resultados[0];
+                porcentajeDescuento = parseFloat(promo.valor);
+                console.log(`✅ Aplicando promo: ${codigoPromo} (-${porcentajeDescuento}%)`);
+            } else {
+                console.log(`❌ El código "${codigoPromo}" no existe en la base de datos.`);
             }
         }
+
+        // 3. Cálculo matemático de la resta
+        const montoDescuento = precioOriginal * (porcentajeDescuento / 100);
+        const precioConDescuento = precioOriginal - montoDescuento;
 
         const nuevoItem = {
             id: idProducto,
             nombre: producto.nombre,
             precioOriginal: precioOriginal,
-            precioVenta: precioConDescuento, // Este es el que se cobra
+            precioVenta: precioConDescuento, 
             descuento: porcentajeDescuento,
             cantidad: parseInt(cantidad),
             subtotal: precioConDescuento * parseInt(cantidad)
@@ -44,8 +50,8 @@ async function agregarCarrito(req, res) {
         respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        console.error("Error en agregarCarrito:", err);
-        respuestas.error(req, res, 'Error interno', 500);
+        console.error("Error en ventas:", err);
+        respuestas.error(req, res, 'Error al procesar la venta', 500);
     }
 }
 
@@ -63,14 +69,14 @@ function totalesCarrito(req, res) {
 
 async function comprar(req, res) {
     try {
-        if (carrito.length === 0) return respuestas.error(req, res, 'Carrito vacío', 400);
+        if (carrito.length === 0) return respuestas.error(req, res, 'El carrito está vacío', 400);
 
         for (const item of carrito) {
             await db.restarStock(item.id, item.cantidad);
         }
 
         carrito = []; 
-        respuestas.success(req, res, 'Venta finalizada', 200);
+        respuestas.success(req, res, 'Venta realizada con éxito', 200);
     } catch (err) {
         respuestas.error(req, res, err.message, 500);
     }

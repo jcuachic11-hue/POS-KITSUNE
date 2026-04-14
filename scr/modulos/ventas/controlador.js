@@ -3,7 +3,6 @@ const respuestas = require('../../red/respuestas');
 
 let carrito = []; 
 
-// Función principal para agregar productos con resta de promo
 async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
@@ -14,7 +13,7 @@ async function agregarCarrito(req, res) {
         let precioBase = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // Búsqueda de promoción por columna 'codigo'
+        // Búsqueda de promoción
         if (codigoPromo && codigoPromo.trim() !== "") {
             try {
                 const promos = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
@@ -22,11 +21,11 @@ async function agregarCarrito(req, res) {
                     porcentajeDescuento = parseFloat(promos[0].valor);
                 }
             } catch (err) {
-                console.log("Aviso: Falló consulta de promo.");
+                console.log("Error consultando promo.");
             }
         }
 
-        // OPERACIÓN DE LA RESTA
+        // LÓGICA DE LA RESTA
         const precioConDescuento = precioBase * (1 - (porcentajeDescuento / 100));
         const subtotalCalculado = precioConDescuento * parseInt(cantidad);
 
@@ -47,12 +46,17 @@ async function agregarCarrito(req, res) {
     }
 }
 
-// Función para listar (Get) - Coincide con línea 7 u 8 de tus rutas
-async function listarTodos(req, res) {
+// Esta función la pide tu ruta GET /carrito
+function listarCarrito(req, res) {
     respuestas.success(req, res, carrito, 200);
 }
 
-// Función para comprar
+// Esta función la pide tu ruta GET /totales
+function totalesCarrito(req, res) {
+    const total = carrito.reduce((acc, item) => acc + item.subtotal, 0);
+    respuestas.success(req, res, { items: carrito.length, total: total.toFixed(2) }, 200);
+}
+
 async function comprar(req, res) {
     try {
         if (carrito.length === 0) return respuestas.error(req, res, 'Carrito vacío', 400);
@@ -60,25 +64,16 @@ async function comprar(req, res) {
             await db.restarStock(item.id, item.cantidad);
         }
         carrito = []; 
-        respuestas.success(req, res, 'Venta realizada', 200);
+        respuestas.success(req, res, 'Venta finalizada', 200);
     } catch (err) {
         respuestas.error(req, res, err.message, 500);
     }
 }
 
-// Función para vaciar carrito (Eliminar)
-async function eliminarCarrito(req, res) {
-    carrito = [];
-    respuestas.success(req, res, 'Carrito limpio', 200);
-}
-
-// Mapeo total de exportaciones para evitar cualquier Undefined en rutas.js
-module.exports = {
-    todos: listarTodos,
-    uno: listarTodos, // Por si acaso buscas por ID
-    agregar: agregarCarrito,
-    agregarCarrito,
-    comprar,
-    eliminar: eliminarCarrito,
-    listar: listarTodos
+// EXPORTS EXACTOS PARA TUS RUTAS
+module.exports = { 
+    agregarCarrito, 
+    listarCarrito, 
+    totalesCarrito, 
+    comprar 
 };

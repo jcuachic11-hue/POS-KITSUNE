@@ -1,80 +1,93 @@
+<div class="container">
+    <h2 id="tituloForm">Nueva Promoción</h2>
+    <input type="text" id="nombre" placeholder="Nombre">
+    <input type="text" id="codigo" placeholder="Código">
+    <input type="number" id="valor" placeholder="Porcentaje %">
+    <button id="btnGuardar" onclick="guardarPromo()">Guardar Promoción</button>
+    <button id="btnCancelar" onclick="limpiarFormulario()" style="display:none; background:gray; margin-top:5px;">Cancelar Edición</button>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Promociones - Kitsune</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Nueva Promoción</h2>
-        <input type="text" id="nombre" placeholder="Nombre (ej: Descuento Verano)">
-        <input type="text" id="codigo" placeholder="Código (ej: VERANO20)">
-        <input type="number" id="valor" placeholder="Porcentaje (ej: 15)">
-        <button onclick="guardarPromo()">Guardar Promoción</button>
+    <h3>Lista de Promociones</h3>
+    <table id="tablaPromos">
+        <thead>
+            <tr><th>Nombre</th><th>Código</th><th>%</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
 
-        <h3>Promociones Activas</h3>
-        <table id="tablaPromos">
-            <thead><tr><th>Nombre</th><th>Código</th><th>%</th><th>Acción</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
+<script>
+    let idEnEdicion = null; // Nuestra variable "memoria" en lugar del input oculto
 
+    async function cargarPromos() {
+        const res = await fetch('/promociones');
+        const data = await res.json();
+        const tabla = document.querySelector('#tablaPromos tbody');
+        
+        tabla.innerHTML = data.body.map(p => `
+            <tr>
+                <td>${p.nombre}</td>
+                <td><strong>${p.codigo}</strong></td>
+                <td>${p.valor}%</td>
+                <td>
+                    <button onclick='prepararEdicion(${JSON.stringify(p)})' style="background:#ffc107; color:black; border:none; padding:5px 10px; cursor:pointer; border-radius:4px;">Editar</button>
+                    <button onclick="eliminar(${p.id})" style="background:#dc3545; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px;">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-   <input type="hidden" id="id_promo">
-    <script>
-        async function cargarPromos() {
-            const res = await fetch('/promociones');
-            const data = await res.json();
-            const tabla = document.querySelector('#tablaPromos tbody');
-            tabla.innerHTML = data.body.map(p => `
-                <tr>
-                    <td>${p.nombre}</td>
-                    <td><strong>${p.codigo}</strong></td>
-                    <td>${p.valor}%</td>
-                    <td><button onclick="eliminar(${p.id})" style="background:red; padding:5px;">X</button></td>
-                </tr>
-            `).join('');
-        }
-
-        function prepararEdicion(p) {
-        document.getElementById('id_promo').value = p.id;
+    function prepararEdicion(p) {
+        idEnEdicion = p.id; // Guardamos el ID en la variable
         document.getElementById('nombre').value = p.nombre;
         document.getElementById('codigo').value = p.codigo;
         document.getElementById('valor').value = p.valor;
-        document.querySelector('button[onclick="guardarPromo()"]').innerText = "Actualizar Cambios";
+        
+        // Cambiamos la interfaz para que sepa que está editando
+        document.getElementById('tituloForm').innerText = "Editando Promoción";
+        document.getElementById('btnGuardar').innerText = "Actualizar Cambios";
+        document.getElementById('btnCancelar').style.display = "block";
     }
 
-        async function guardarPromo() {
-            const body = {
-                nombre: document.getElementById('nombre').value,
-                codigo: document.getElementById('codigo').value,
-                valor: document.getElementById('valor').value
-            };
-            await fetch('/promociones', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            location.reload();
-        }
+    function limpiarFormulario() {
+        idEnEdicion = null;
+        document.getElementById('nombre').value = "";
+        document.getElementById('codigo').value = "";
+        document.getElementById('valor').value = "";
+        document.getElementById('tituloForm').innerText = "Nueva Promoción";
+        document.getElementById('btnGuardar').innerText = "Guardar Promoción";
+        document.getElementById('btnCancelar').style.display = "none";
+    }
 
-        async function eliminar(id) {
-            if(confirm('¿Eliminar?')) {
-                await fetch('/promociones/' + id, { method: 'DELETE' });
-                cargarPromos();
-            }
-        }
+    async function guardarPromo() {
+        const body = {
+            nombre: document.getElementById('nombre').value,
+            codigo: document.getElementById('codigo').value,
+            valor: document.getElementById('valor').value
+        };
 
-        cargarPromos();
-    </script>
-</body>
-</html>
+        if (idEnEdicion) body.id = idEnEdicion; // Si estamos editando, incluimos el ID
+
+        const metodo = idEnEdicion ? 'PUT' : 'POST';
+
+        const res = await fetch('/promociones', {
+            method: metodo,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            alert(idEnEdicion ? "Actualizado" : "Guardado");
+            limpiarFormulario();
+            cargarPromos();
+        }
+    }
+
+    async function eliminar(id) {
+        if(confirm('¿Seguro que quieres eliminar esta promo?')) {
+            await fetch('/promociones/' + id, { method: 'DELETE' });
+            cargarPromos();
+        }
+    }
+
+    cargarPromos();
+</script>

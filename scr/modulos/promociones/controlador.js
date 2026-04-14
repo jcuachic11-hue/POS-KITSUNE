@@ -47,7 +47,7 @@ exports.eliminarPromocion = async (req, res) => {
 
 exports.actualizarPromocion = async (req, res) => {
     try {
-        // En tu DB, agregar suele manejar el UPDATE si el objeto lleva ID
+       
         await db.agregar(TABLA, req.body); 
         respuestas.success(req, res, 'Promoción actualizada', 200);
     } catch (err) {

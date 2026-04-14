@@ -7,7 +7,7 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
-        // 1. Buscamos el producto por su ID
+        // 1. Buscar Producto
         const producto = await db.uno('productos', idProducto);
         if (!producto) {
             return respuestas.error(req, res, 'Producto no encontrado', 404);
@@ -16,23 +16,23 @@ async function agregarCarrito(req, res) {
         let precioOriginal = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // 2. BUSQUEDA POR CÓDIGO (Consulta Directa)
+        // 2. BUSQUEDA DE PROMO (Protegida para que no rompa el flujo)
         if (codigoPromo && codigoPromo.trim() !== "") {
-            // Buscamos en la tabla promociones donde la columna 'codigo' coincida
-            // Si tu columna se llama diferente (ej: 'nombre'), cámbialo aquí abajo:
-            const queryPromo = 'SELECT * FROM promociones WHERE codigo = ?';
-            const resultados = await db.query(queryPromo, [codigoPromo.trim()]);
-            
-            if (resultados.length > 0) {
-                const promo = resultados[0];
-                porcentajeDescuento = parseFloat(promo.valor);
-                console.log(`✅ Aplicando promo: ${codigoPromo} (-${porcentajeDescuento}%)`);
-            } else {
-                console.log(`❌ El código "${codigoPromo}" no existe en la base de datos.`);
+            try {
+                // Buscamos por la columna 'codigo'
+                const resultados = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
+                
+                if (resultados && resultados.length > 0) {
+                    porcentajeDescuento = parseFloat(resultados[0].valor);
+                    console.log(`✅ Promo aplicada: ${codigoPromo} (-${porcentajeDescuento}%)`);
+                }
+            } catch (promoErr) {
+                console.error("Error al buscar promo (posible columna inexistente):", promoErr.message);
+                // Si falla la promo, seguimos con descuento 0, pero NO detenemos el proceso
             }
         }
 
-        // 3. Cálculo matemático de la resta
+        // 3. Cálculos
         const montoDescuento = precioOriginal * (porcentajeDescuento / 100);
         const precioConDescuento = precioOriginal - montoDescuento;
 
@@ -50,8 +50,8 @@ async function agregarCarrito(req, res) {
         respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        console.error("Error en ventas:", err);
-        respuestas.error(req, res, 'Error al procesar la venta', 500);
+        console.error("Error crítico en agregarCarrito:", err);
+        respuestas.error(req, res, 'Error interno del servidor', 500);
     }
 }
 
@@ -61,30 +61,20 @@ function listarCarrito(req, res) {
 
 function totalesCarrito(req, res) {
     const total = carrito.reduce((acc, item) => acc + item.subtotal, 0);
-    respuestas.success(req, res, { 
-        items: carrito.length,
-        total: total.toFixed(2)
-    }, 200);
+    respuestas.success(req, res, { items: carrito.length, total: total.toFixed(2) }, 200);
 }
 
 async function comprar(req, res) {
     try {
-        if (carrito.length === 0) return respuestas.error(req, res, 'El carrito está vacío', 400);
-
+        if (carrito.length === 0) return respuestas.error(req, res, 'Carrito vacío', 400);
         for (const item of carrito) {
             await db.restarStock(item.id, item.cantidad);
         }
-
         carrito = []; 
-        respuestas.success(req, res, 'Venta realizada con éxito', 200);
+        respuestas.success(req, res, 'Venta realizada', 200);
     } catch (err) {
         respuestas.error(req, res, err.message, 500);
     }
 }
 
-module.exports = {
-    agregarCarrito,
-    listarCarrito,
-    totalesCarrito,
-    comprar
-};
+module.exports = { agregarCarrito, listarCarrito, totalesCarrito, comprar };

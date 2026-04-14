@@ -10,8 +10,9 @@
         input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
         .btn-add { background: #6c757d; margin-bottom: 10px; }
+        .btn-del { background: #dc3545; padding: 8px 12px; } /* Estilo para el botón eliminar */
         #resultado { background: #333; color: #9fff9d; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; }
-        .precio-unit { color: #28a745; font-weight: bold; }
+        .precio-unit { color: #28a745; font-weight: bold; min-width: 60px; }
     </style>
 </head>
 <body>
@@ -25,6 +26,7 @@
                 <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
                 <span class="precio-unit"></span>
+                <button class="btn-del" onclick="eliminarFila(this)">X</button>
             </div>
         </div>
         <button class="btn-add" onclick="agregarFilaInput()">+ Añadir Fila</button>
@@ -44,11 +46,30 @@
                 <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
                 <span class="precio-unit"></span>
+                <button class="btn-del" onclick="eliminarFila(this)">X</button>
             `;
             document.getElementById('contenedor-filas').appendChild(div);
         }
 
+        function eliminarFila(btn) {
+            const filas = document.querySelectorAll('.fila-producto');
+            // Evitamos borrar la última fila si quieres que siempre haya una visible
+            if (filas.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                // Si es la única, solo limpiamos los inputs
+                const fila = btn.parentElement;
+                fila.querySelector('.idProducto').value = '';
+                fila.querySelector('.cantidad').value = '1';
+                fila.querySelector('.precio-unit').innerText = '';
+            }
+        }
+
         async function procesarFilas() {
+            // Limpiamos el carrito en el servidor antes de cargar las filas actuales 
+            // para que no se dupliquen si el usuario da click varias veces
+            // Nota: Podrías añadir un endpoint /ventas/limpiar si fuera necesario
+            
             const filas = document.querySelectorAll('.fila-producto');
             let procesados = 0;
 
@@ -69,7 +90,7 @@
                     }
                 }
             }
-            document.getElementById('resultado').innerText = `Productos cargados: ${procesados}`;
+            document.getElementById('resultado').innerText = `Productos cargados en memoria: ${procesados}`;
         }
 
         async function verTotales() {
@@ -86,7 +107,7 @@
             
             if(!data.error) {
                 alert("¡Venta Finalizada!");
-                location.reload(); // Recargamos para limpiar todo
+                location.reload(); 
             } else {
                 alert("Error: " + data.body);
             }

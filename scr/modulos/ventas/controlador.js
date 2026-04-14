@@ -7,13 +7,15 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
-        // Convertimos a Int para que db.uno no busque en la columna 'usuario'
+        // Convertimos a entero para que mysql.js no busque en la columna 'usuario'
         const idLimpio = parseInt(idProducto);
         const producto = await db.uno('productos', idLimpio);
         
         if (!producto) return respuestas.error(req, res, 'Producto no encontrado', 404);
 
-        let precioBase = parseFloat(producto.precio);
+        // --- ASIGNACIÓN CORRECTA DE CAMPOS ---
+        const nombreProducto = producto.nombre; // Aquí va el nombre "2222"
+        let precioBase = parseFloat(producto.precio); // Aquí va el precio "4444"
         let porcentajeDescuento = 0;
 
         // BÚSQUEDA DE PROMO
@@ -24,18 +26,18 @@ async function agregarCarrito(req, res) {
             );
 
             if (promoEncontrada) {
-                // Usamos la columna 'valor' de tu tabla promociones
+                // Se usa la columna 'valor' de tu tabla
                 porcentajeDescuento = parseFloat(promoEncontrada.valor || 0);
             }
         }
 
-        // LA RESTA: Se aplica directamente al precio base
+        // OPERACIÓN MATEMÁTICA: 4444 * (1 - 0.10) = 3999.60
         const precioVenta = precioBase * (1 - (porcentajeDescuento / 100));
         const subtotalCalculado = precioVenta * parseInt(cantidad);
 
         const nuevoItem = {
             id: idLimpio,
-            nombre: producto.nombre,
+            nombre: nombreProducto,
             precioOriginal: precioBase,
             precioVenta: precioVenta, 
             descuento: porcentajeDescuento,
@@ -67,13 +69,11 @@ function totalesCarrito(req, res) {
 async function comprar(req, res) {
     try {
         if (carrito.length === 0) return respuestas.error(req, res, 'Carrito vacío', 400);
-        
         for (const item of carrito) {
             await db.restarStock(item.id, item.cantidad);
         }
-        
         carrito = []; 
-        respuestas.success(req, res, 'Venta realizada con éxito', 200);
+        respuestas.success(req, res, 'Venta realizada', 200);
     } catch (err) {
         respuestas.error(req, res, err.message, 500);
     }

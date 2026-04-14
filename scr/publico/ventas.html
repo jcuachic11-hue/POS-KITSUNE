@@ -1,53 +1,142 @@
-function actualizarInterfaz(carrito) {
-    const tbody = document.querySelector('#tablaResumen tbody');
-    tbody.innerHTML = ""; // Limpiamos la tabla antes de renderizar
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Kitsune - Ventas</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .contenedor { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #2c3e50; color: white; }
+        .fila-producto { margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        .btn-primario { background-color: #27ae60; }
+        .btn-secundario { background-color: #2980b9; }
+        #resumenVenta { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+        .total-seccion { text-align: right; font-size: 1.5em; font-weight: bold; margin-top: 15px; color: #c0392b; }
+        small { display: block; line-height: 1.2; }
+    </style>
+</head>
+<body>
 
-    if (!carrito || carrito.length === 0) return;
-
-    carrito.forEach(item => {
-        // La resta ya viene calculada del servidor en item.precioVenta
-        const fila = `
-            <tr>
-                <td>${item.nombre}</td>
-                <td>
-                    $${parseFloat(item.precioVenta).toFixed(2)}
-                    ${item.descuento > 0 ? `<br><small style="color:red">(-${item.descuento}%)</small>` : ''}
-                </td>
-                <td>${item.cantidad}</td>
-                <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
-            </tr>`;
-        tbody.innerHTML += fila;
-    });
-
-    // Calculamos el Gran Total sumando los subtotales ya restados
-    const totalFinal = carrito.reduce((acc, i) => acc + parseFloat(i.subtotal), 0);
+<div class="contenedor">
+    <h2>Nueva Venta</h2>
     
-    document.getElementById('granTotal').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
-    document.getElementById('resumenVenta').style.display = 'block';
-}
+    <div id="productosContenedor">
+        <div class="fila-producto">
+            <input type="number" class="idProducto" placeholder="ID Producto" required>
+            <input type="number" class="cantidad" placeholder="Cant." value="1" min="1" style="width: 60px;">
+            <input type="text" class="promo" placeholder="Cód. Promo (Opcional)">
+            <button class="btn btn-secundario" onclick="agregarFila()">+</button>
+        </div>
+    </div>
 
-// Asegúrate de que tu función procesarVenta llame a actualizarInterfaz al final
-async function procesarVenta() {
-    const filas = document.querySelectorAll('.fila-producto');
-    
-    // Opcional: Podrías añadir un fetch para limpiar el carrito aquí si quieres fresh start
-    
-    for (let fila of filas) {
-        const idProducto = fila.querySelector('.idProducto').value;
-        const cantidad = fila.querySelector('.cantidad').value;
-        const codigoPromo = fila.querySelector('.promo').value;
+    <div style="margin-top: 20px;">
+        <button class="btn btn-primario" onclick="procesarVenta()">Cargar y Aplicar Resta</button>
+    </div>
 
-        if (idProducto) {
-            await fetch('/ventas/carrito', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idProducto, cantidad, codigoPromo })
-            });
+    <div id="resumenVenta" style="display: none;">
+        <h3>Resumen de Carrito</h3>
+        <table id="tablaResumen">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unit.</th>
+                    <th>Cant.</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+        <div class="total-seccion" id="granTotal">TOTAL: $0.00</div>
+        <button class="btn btn-primario" style="width: 100%; margin-top: 20px;" onclick="finalizarCompra()">Confirmar Venta y Restar Stock</button>
+    </div>
+</div>
+
+<script>
+    function agregarFila() {
+        const div = document.createElement('div');
+        div.className = 'fila-producto';
+        div.innerHTML = `
+            <input type="number" class="idProducto" placeholder="ID Producto">
+            <input type="number" class="cantidad" placeholder="Cant." value="1" min="1" style="width: 60px;">
+            <input type="text" class="promo" placeholder="Cód. Promo">
+            <button class="btn btn-secundario" onclick="this.parentElement.remove()">-</button>
+        `;
+        document.getElementById('productosContenedor').appendChild(div);
+    }
+
+    async function procesarVenta() {
+        const filas = document.querySelectorAll('.fila-producto');
+        
+        // Limpiamos el carrito en el servidor antes de empezar para evitar duplicados
+        // Si no tienes una ruta para limpiar, esta parte solo procesará los nuevos
+        
+        for (let fila of filas) {
+            const idProducto = fila.querySelector('.idProducto').value;
+            const cantidad = fila.querySelector('.cantidad').value;
+            const codigoPromo = fila.querySelector('.promo').value;
+
+            if (idProducto) {
+                await fetch('/ventas/carrito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idProducto, cantidad, codigoPromo })
+                });
+            }
+        }
+
+        // Una vez cargados todos, obtenemos el estado final del carrito
+        const res = await fetch('/ventas/carrito');
+        const data = await res.json();
+        actualizarInterfaz(data.body);
+    }
+
+    function actualizarInterfaz(carrito) {
+        const tbody = document.querySelector('#tablaResumen tbody');
+        tbody.innerHTML = ""; 
+
+        if (!carrito || carrito.length === 0) return;
+
+        carrito.forEach(item => {
+            const fila = `
+                <tr>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td>
+                        $${parseFloat(item.precioVenta).toFixed(2)}
+                        ${item.descuento > 0 ? `<br><small style="color:red">(-${item.descuento}%)</small>` : ''}
+                    </td>
+                    <td>${item.cantidad}</td>
+                    <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
+                </tr>`;
+            tbody.innerHTML += fila;
+        });
+
+        const totalFinal = carrito.reduce((acc, i) => acc + parseFloat(i.subtotal), 0);
+        document.getElementById('granTotal').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
+        document.getElementById('resumenVenta').style.display = 'block';
+    }
+
+    async function finalizarCompra() {
+        try {
+            const res = await fetch('/ventas/comprar', { method: 'POST' });
+            const data = await res.json();
+            
+            if (!data.error) {
+                alert('Venta realizada con éxito y stock actualizado');
+                location.reload();
+            } else {
+                alert('Error: ' + data.body);
+            }
+        } catch (err) {
+            alert('Error al conectar con el servidor');
         }
     }
-    
-    // Obtener los datos actualizados del servidor
-    const res = await fetch('/ventas/carrito');
-    const data = await res.json();
-    actualizarInterfaz(data.body);
-}
+</script>
+
+</body>
+</html>

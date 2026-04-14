@@ -6,33 +6,30 @@ let carrito = [];
 async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
-        console.log(`Intentando agregar: Prod ${idProducto}, Cant ${cantidad}, Promo [${codigoPromo}]`);
-
+        
         const producto = await db.uno('productos', idProducto);
         if (!producto) return respuestas.error(req, res, 'Producto no encontrado', 404);
 
         let precioOriginal = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
+        // --- BÚSQUEDA CORREGIDA SEGÚN TUS COLUMNAS ---
         if (codigoPromo && codigoPromo.trim() !== "") {
             try {
-                // Forzamos la búsqueda. Asegúrate que la columna se llame 'codigo'
-                const resultados = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
+                // Buscamos en 'codigov' que es donde tienes "01"
+                const resultados = await db.query('SELECT * FROM promociones WHERE codigov = ?', [codigoPromo.trim()]);
                 
                 if (resultados && resultados.length > 0) {
-                    porcentajeDescuento = parseFloat(resultados[0].valor);
-                    console.log(`¡PROMO ENCONTRADA! Valor: ${porcentajeDescuento}%`);
-                } else {
-                    console.log(`La promo [${codigoPromo}] NO existe en la columna 'codigo'`);
+                    // Jalamos el porcentaje de la columna 'alor'
+                    porcentajeDescuento = parseFloat(resultados[0].alor); 
+                    console.log(`✅ Promo detectada: ${resultados[0].nombre} con -${porcentajeDescuento}%`);
                 }
             } catch (err) {
-                console.log("Error en la consulta SQL de promo:", err.message);
+                console.log("Error SQL en promo:", err.message);
             }
         }
 
-        // CÁLCULO MANUAL (Aquí se hace la resta)
-        const factorDescuento = porcentajeDescuento / 100; // Ej: 0.10
-        const precioVenta = precioOriginal * (1 - factorDescuento); // Ej: 4444 * 0.90
+        const precioVenta = precioOriginal - (precioOriginal * (porcentajeDescuento / 100));
 
         const nuevoItem = {
             id: idProducto,
@@ -48,8 +45,8 @@ async function agregarCarrito(req, res) {
         respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        console.error("Error fatal:", err);
-        respuestas.error(req, res, 'Error en el servidor', 500);
+        console.error(err);
+        respuestas.error(req, res, 'Error interno', 500);
     }
 }
 

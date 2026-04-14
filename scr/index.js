@@ -22,6 +22,7 @@ const usuarios = require('./modulos/usuarios/rutas');
 const ventas = require('./modulos/ventas/rutas');
 const devoluciones = require('./modulos/devoluciones/rutas');
 const authRutas = require('./modulos/auth/rutas');
+const promociones = require('./modulos/promociones/rutas');
 
 // --- ENDPOINTS ---
 app.use('/productos', productos);
@@ -29,6 +30,7 @@ app.use('/usuarios', usuarios);
 app.use('/ventas', ventas);
 app.use('/devoluciones', devoluciones);
 app.use('/login', authRutas);
+app.use('/promociones', promociones);
 
 // --- PUERTO ---
 const PORT = process.env.PORT || 8080;

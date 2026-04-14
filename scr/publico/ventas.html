@@ -1,90 +1,68 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Módulo de Ventas - POS Kitsune</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { padding: 8px; margin-right: 10px; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
-        #resultado { background: #333; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; }
-        /* Estilo para el precio visual */
-        .precio-tag { font-size: 1.2rem; font-weight: bold; color: #28a745; margin-left: 15px; }
-    </style>
-</head>
-<body>
-    <a href="dashboard.html" style="text-decoration: none;">⬅ Volver</a>
-    <h1>Módulo de Ventas</h1>
-
-    <div class="card">
-        <h2>Agregar al carrito</h2>
-        <input type="number" id="idProducto" placeholder="ID Producto">
-        <input type="number" id="cantidad" value="1" min="1">
-        <button onclick="agregarCarrito()">Agregar Producto</button>
-        <span id="precioVisual" class="precio-tag"></span>
+<div class="card">
+    <h2>Productos a vender</h2>
+    <div id="contenedor-filas">
+        <div class="fila-producto" style="margin-bottom: 10px;">
+            <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
+            <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
+            <span class="precio-unitario" style="color: #28a745; font-weight: bold;"></span>
+        </div>
     </div>
-
-    <div class="card">
-        <button onclick="listarCarrito()">Ver Carrito</button>
-        <button onclick="verTotales()">Ver Totales</button>
-        <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
+    
+    <div style="margin-top: 15px;">
+        <button onclick="agregarFilaInput()" style="background: #6c757d;">+ Añadir otra fila</button>
+        <button onclick="procesarTodasLasFilas()" style="background: #007bff;">Agregar Todo al Carrito</button>
     </div>
+</div>
 
-    <pre id="resultado">Esperando acciones...</pre>
+<div class="card">
+    <button onclick="listarCarrito()">Ver Carrito (Estado actual)</button>
+    <button onclick="verTotales()">Ver Totales</button>
+    <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
+</div>
 
-    <script>
-        async function agregarCarrito() {
-            const idProducto = document.getElementById('idProducto').value;
-            const cantidad = document.getElementById('cantidad').value;
+<pre id="resultado">Esperando acciones...</pre>
 
-            const res = await fetch('/ventas/carrito', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idProducto, cantidad })
-            });
-            const data = await res.json();
-            document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
-            
-            if(!data.error) {
-                // Si el backend responde con el objeto del producto, extraemos el precio
-                if (data.body && data.body.precio) {
-                    document.getElementById('precioVisual').innerText = `Precio: $${data.body.precio}`;
-                }
+<script>
+    // Función para añadir visualmente más campos
+    function agregarFilaInput() {
+        const div = document.createElement('div');
+        div.className = 'fila-producto';
+        div.style.marginBottom = "10px";
+        div.innerHTML = `
+            <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
+            <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
+            <span class="precio-unitario" style="color: #28a745; font-weight: bold;"></span>
+        `;
+        document.getElementById('contenedor-filas').appendChild(div);
+    }
+
+    // Procesa cada fila enviándola al controlador
+    async function procesarTodasLasFilas() {
+        const filas = document.querySelectorAll('.fila-producto');
+        let resultados = [];
+
+        for (let fila of filas) {
+            const idProducto = fila.querySelector('.idProducto').value;
+            const cantidad = fila.querySelector('.cantidad').value;
+
+            if (idProducto && cantidad) {
+                const res = await fetch('/ventas/carrito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idProducto, cantidad })
+                });
+                const data = await res.json();
                 
-                document.getElementById('idProducto').value = '';
-                document.getElementById('idProducto').focus();
-            } else {
-                document.getElementById('precioVisual').innerText = '';
+                // Mostrar precio en la fila para confirmación visual
+                if (data.body && data.body.precio) {
+                    fila.querySelector('.precio-unitario').innerText = ` $${data.body.precio}`;
+                }
+                resultados.push(data);
             }
         }
+        
+        document.getElementById('resultado').innerText = "Productos procesados:\n" + JSON.stringify(resultados, null, 2);
+    }
 
-        async function listarCarrito() {
-            const res = await fetch('/ventas/carrito');
-            const data = await res.json();
-            document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
-            // Limpiamos el precio visual al listar todo el carrito
-            document.getElementById('precioVisual').innerText = '';
-        }
-
-        async function verTotales() {
-            const res = await fetch('/ventas/totales');
-            const data = await res.json();
-            document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
-        }
-
-        async function comprar() {
-            if(!confirm("¿Confirmar la venta?")) return;
-
-            const res = await fetch('/ventas/comprar', { method: 'POST' });
-            const data = await res.json();
-            
-            if(!data.error) {
-                alert("¡Venta realizada!");
-                document.getElementById('precioVisual').innerText = '';
-            }
-            document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
-        }
-    </script>
-</body>
-</html>
+    // ... (Mantén tus funciones listarCarrito, verTotales y comprar igual que antes)
+</script>

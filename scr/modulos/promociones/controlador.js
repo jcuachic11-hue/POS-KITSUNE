@@ -44,3 +44,13 @@ exports.eliminarPromocion = async (req, res) => {
         respuestas.error(req, res, err.message, 500);
     }
 };
+
+exports.actualizarPromocion = async (req, res) => {
+    try {
+        // En tu DB, agregar suele manejar el UPDATE si el objeto lleva ID
+        await db.agregar(TABLA, req.body); 
+        respuestas.success(req, res, 'Promoción actualizada', 200);
+    } catch (err) {
+        respuestas.error(req, res, err.message, 500);
+    }
+};

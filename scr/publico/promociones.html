@@ -28,6 +28,8 @@
         </table>
     </div>
 
+
+   <input type="hidden" id="id_promo">
     <script>
         async function cargarPromos() {
             const res = await fetch('/promociones');
@@ -42,6 +44,14 @@
                 </tr>
             `).join('');
         }
+
+        function prepararEdicion(p) {
+        document.getElementById('id_promo').value = p.id;
+        document.getElementById('nombre').value = p.nombre;
+        document.getElementById('codigo').value = p.codigo;
+        document.getElementById('valor').value = p.valor;
+        document.querySelector('button[onclick="guardarPromo()"]').innerText = "Actualizar Cambios";
+    }
 
         async function guardarPromo() {
             const body = {

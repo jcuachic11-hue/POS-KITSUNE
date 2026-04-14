@@ -1,68 +1,96 @@
-<div class="card">
-    <h2>Productos a vender</h2>
-    <div id="contenedor-filas">
-        <div class="fila-producto" style="margin-bottom: 10px;">
-            <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
-            <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-            <span class="precio-unitario" style="color: #28a745; font-weight: bold;"></span>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ventas - POS Kitsune</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
+        .btn-add { background: #6c757d; margin-bottom: 10px; }
+        #resultado { background: #333; color: #9fff9d; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; }
+        .precio-unit { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <a href="dashboard.html" style="text-decoration: none;">⬅ Volver</a>
+    <h1>Módulo de Ventas</h1>
+
+    <div class="card">
+        <h2>Productos</h2>
+        <div id="contenedor-filas">
+            <div class="fila-producto">
+                <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
+                <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
+                <span class="precio-unit"></span>
+            </div>
         </div>
+        <button class="btn-add" onclick="agregarFilaInput()">+ Añadir Fila</button>
+        <hr>
+        <button onclick="procesarFilas()" style="background: #17a2b8;">1. Cargar Productos</button>
+        <button onclick="verTotales()">2. Calcular Total</button>
+        <button onclick="comprar()" style="background: #28a745;">3. Finalizar Venta</button>
     </div>
-    
-    <div style="margin-top: 15px;">
-        <button onclick="agregarFilaInput()" style="background: #6c757d;">+ Añadir otra fila</button>
-        <button onclick="procesarTodasLasFilas()" style="background: #007bff;">Agregar Todo al Carrito</button>
-    </div>
-</div>
 
-<div class="card">
-    <button onclick="listarCarrito()">Ver Carrito (Estado actual)</button>
-    <button onclick="verTotales()">Ver Totales</button>
-    <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
-</div>
+    <pre id="resultado">Esperando acciones...</pre>
 
-<pre id="resultado">Esperando acciones...</pre>
+    <script>
+        function agregarFilaInput() {
+            const div = document.createElement('div');
+            div.className = 'fila-producto';
+            div.innerHTML = `
+                <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
+                <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
+                <span class="precio-unit"></span>
+            `;
+            document.getElementById('contenedor-filas').appendChild(div);
+        }
 
-<script>
-    // Función para añadir visualmente más campos
-    function agregarFilaInput() {
-        const div = document.createElement('div');
-        div.className = 'fila-producto';
-        div.style.marginBottom = "10px";
-        div.innerHTML = `
-            <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
-            <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-            <span class="precio-unitario" style="color: #28a745; font-weight: bold;"></span>
-        `;
-        document.getElementById('contenedor-filas').appendChild(div);
-    }
+        async function procesarFilas() {
+            const filas = document.querySelectorAll('.fila-producto');
+            let procesados = 0;
 
-    // Procesa cada fila enviándola al controlador
-    async function procesarTodasLasFilas() {
-        const filas = document.querySelectorAll('.fila-producto');
-        let resultados = [];
+            for (let fila of filas) {
+                const idProducto = fila.querySelector('.idProducto').value;
+                const cantidad = fila.querySelector('.cantidad').value;
 
-        for (let fila of filas) {
-            const idProducto = fila.querySelector('.idProducto').value;
-            const cantidad = fila.querySelector('.cantidad').value;
-
-            if (idProducto && cantidad) {
-                const res = await fetch('/ventas/carrito', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idProducto, cantidad })
-                });
-                const data = await res.json();
-                
-                // Mostrar precio en la fila para confirmación visual
-                if (data.body && data.body.precio) {
-                    fila.querySelector('.precio-unitario').innerText = ` $${data.body.precio}`;
+                if (idProducto) {
+                    const res = await fetch('/ventas/carrito', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idProducto, cantidad })
+                    });
+                    const data = await res.json();
+                    if (!data.error) {
+                        fila.querySelector('.precio-unit').innerText = `$${data.body.precio}`;
+                        procesados++;
+                    }
                 }
-                resultados.push(data);
+            }
+            document.getElementById('resultado').innerText = `Productos cargados: ${procesados}`;
+        }
+
+        async function verTotales() {
+            const res = await fetch('/ventas/totales');
+            const data = await res.json();
+            document.getElementById('resultado').innerText = "RESUMEN DE VENTA:\n" + JSON.stringify(data.body, null, 2);
+        }
+
+        async function comprar() {
+            if(!confirm("¿Desea cerrar la venta y descontar inventario?")) return;
+
+            const res = await fetch('/ventas/comprar', { method: 'POST' });
+            const data = await res.json();
+            
+            if(!data.error) {
+                alert("¡Venta Finalizada!");
+                location.reload(); // Recargamos para limpiar todo
+            } else {
+                alert("Error: " + data.body);
             }
         }
-        
-        document.getElementById('resultado').innerText = "Productos procesados:\n" + JSON.stringify(resultados, null, 2);
-    }
-
-    // ... (Mantén tus funciones listarCarrito, verTotales y comprar igual que antes)
-</script>
+    </script>
+</body>
+</html>

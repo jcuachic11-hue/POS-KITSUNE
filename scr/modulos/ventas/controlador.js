@@ -3,22 +3,50 @@ const respuestas = require('../../red/respuestas');
 
 let carrito = []; 
 
-function agregarCarrito(req, res) {
-    // Extraemos con los nombres exactos que vienen del HTML
-    const { idProducto, cantidad } = req.body; 
-    
-    // Lo guardamos en el carrito con nombres claros
-    carrito.push({
-        id: idProducto, 
-        cantidad: parseInt(cantidad)
-    });
-    
-    console.log("Producto agregado. Carrito actual:", carrito);
-    respuestas.success(req, res, 'Producto añadido al carrito', 201);
+async function agregarCarrito(req, res) {
+    try {
+        const { idProducto, cantidad } = req.body; 
+        
+        // Buscamos el producto en la BD para obtener el precio y nombre
+        const producto = await db.uno('productos', idProducto);
+
+        if (!producto) {
+            return respuestas.error(req, res, 'Producto no encontrado', 404);
+        }
+
+        // Creamos el objeto con la información completa
+        const nuevoItem = {
+            id: idProducto,
+            nombre: producto.nombre,
+            precio: producto.precio, // <--- Aquí jalamos el precio
+            cantidad: parseInt(cantidad),
+            subtotal: producto.precio * parseInt(cantidad)
+        };
+        
+        carrito.push(nuevoItem);
+        
+        console.log("Producto agregado. Carrito actual:", carrito);
+        
+        // Devolvemos el objeto completo para que el HTML muestre el precio
+        respuestas.success(req, res, nuevoItem, 201);
+
+    } catch (err) {
+        console.error("Error al agregar al carrito:", err);
+        respuestas.error(req, res, 'Error al obtener datos del producto', 500);
+    }
 }
 
 function listarCarrito(req, res) {
     respuestas.success(req, res, carrito, 200);
+}
+
+// Función para calcular los totales reales del carrito
+function totalesCarrito(req, res) {
+    const total = carrito.reduce((acc, item) => acc + item.subtotal, 0);
+    respuestas.success(req, res, { 
+        items: carrito.length,
+        total: total 
+    }, 200);
 }
 
 async function comprar(req, res) {
@@ -31,8 +59,6 @@ async function comprar(req, res) {
 
         for (const item of carrito) {
             console.log(`Restando ${item.cantidad} al producto ID: ${item.id}`);
-            
-            // Llamamos a la función de mysql.js
             await db.restarStock(item.id, item.cantidad);
         }
 
@@ -48,6 +74,6 @@ async function comprar(req, res) {
 module.exports = {
     agregarCarrito,
     listarCarrito,
-    totalesCarrito: (req, res) => respuestas.success(req, res, { msg: "ok" }, 200),
+    totalesCarrito,
     comprar
 };

@@ -9,6 +9,8 @@
         input { padding: 8px; margin-right: 10px; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
         #resultado { background: #333; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        /* Estilo para el precio visual */
+        .precio-tag { font-size: 1.2rem; font-weight: bold; color: #28a745; margin-left: 15px; }
     </style>
 </head>
 <body>
@@ -20,6 +22,7 @@
         <input type="number" id="idProducto" placeholder="ID Producto">
         <input type="number" id="cantidad" value="1" min="1">
         <button onclick="agregarCarrito()">Agregar Producto</button>
+        <span id="precioVisual" class="precio-tag"></span>
     </div>
 
     <div class="card">
@@ -44,8 +47,15 @@
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
             
             if(!data.error) {
+                // Si el backend responde con el objeto del producto, extraemos el precio
+                if (data.body && data.body.precio) {
+                    document.getElementById('precioVisual').innerText = `Precio: $${data.body.precio}`;
+                }
+                
                 document.getElementById('idProducto').value = '';
                 document.getElementById('idProducto').focus();
+            } else {
+                document.getElementById('precioVisual').innerText = '';
             }
         }
 
@@ -53,6 +63,8 @@
             const res = await fetch('/ventas/carrito');
             const data = await res.json();
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
+            // Limpiamos el precio visual al listar todo el carrito
+            document.getElementById('precioVisual').innerText = '';
         }
 
         async function verTotales() {
@@ -69,6 +81,7 @@
             
             if(!data.error) {
                 alert("¡Venta realizada!");
+                document.getElementById('precioVisual').innerText = '';
             }
             document.getElementById('resultado').innerText = JSON.stringify(data, null, 2);
         }

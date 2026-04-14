@@ -7,28 +7,27 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
-        // 1. Obtener producto
         const producto = await db.uno('productos', idProducto);
         if (!producto) return respuestas.error(req, res, 'Producto no encontrado', 404);
 
         let precioBase = parseFloat(producto.precio);
         let porcentajeDescuento = 0;
 
-        // 2. Lógica de Promoción
+        // BÚSQUEDA DE LA PROMO
         if (codigoPromo && codigoPromo.trim() !== "") {
             try {
+                // Buscamos en la columna 'codigo'
                 const promos = await db.query('SELECT * FROM promociones WHERE codigo = ?', [codigoPromo.trim()]);
                 if (promos && promos.length > 0) {
                     porcentajeDescuento = parseFloat(promos[0].valor);
                 }
             } catch (err) {
-                console.log("Error consultando promo:", err.message);
+                console.log("Error en consulta de promo:", err.message);
             }
         }
 
-        // 3. LA RESTA: Cálculo del precio final y subtotal
-        const factor = porcentajeDescuento / 100;
-        const precioConDescuento = precioBase * (1 - factor);
+        // --- OPERACIÓN DE LA RESTA ---
+        const precioConDescuento = precioBase * (1 - (porcentajeDescuento / 100));
         const subtotalCalculado = precioConDescuento * parseInt(cantidad);
 
         const nuevoItem = {
@@ -45,15 +44,17 @@ async function agregarCarrito(req, res) {
         return respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        return respuestas.error(req, res, 'Error en el servidor', 500);
+        return respuestas.error(req, res, 'Error interno', 500);
     }
 }
 
-function listarCarrito(req, res) {
+// Esta función debe llamarse exactamente como la pide tu archivo de rutas
+async function todos(req, res) {
     respuestas.success(req, res, carrito, 200);
 }
 
-function limpiarCarrito(req, res) {
+// Función para limpiar el carrito (opcional, pero recomendada)
+async function eliminar(req, res) {
     carrito = [];
     respuestas.success(req, res, 'Carrito vaciado', 200);
 }
@@ -71,4 +72,12 @@ async function comprar(req, res) {
     }
 }
 
-module.exports = { agregarCarrito, listarCarrito, limpiarCarrito, comprar };
+// REVISA AQUÍ: He puesto los nombres más comunes que suelen tener las rutas
+module.exports = {
+    agregar: agregarCarrito, // Si tu ruta dice .post('/', controlador.agregar)
+    agregarCarrito,          // Por si acaso
+    todos,                   // Esta es la que probablemente busca el .get('/')
+    listarCarrito: todos,    // Alias por si acaso
+    eliminar, 
+    comprar
+};

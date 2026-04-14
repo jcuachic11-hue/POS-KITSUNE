@@ -22,7 +22,7 @@
 </head>
 <body>
 
-    <h1>🦊 Gestión de Productos - POS Kitsune</h1>
+    <h1> Gestión de Productos - POS Kitsune</h1>
 
     <form id="productoForm">
         <h3>Agregar / Editar Producto</h3>
@@ -129,11 +129,11 @@
                 });
 
                 if (res.ok) {
-                    alert(id ? "✅ Producto actualizado correctamente" : "✅ Producto agregado con éxito");
+                    alert(id ? " Producto actualizado correctamente" : " Producto agregado con éxito");
                     limpiarFormulario();
                     cargarProductos();
                 } else {
-                    alert("❌ Error al procesar en el servidor");
+                    alert(" Error al procesar en el servidor");
                 }
             } catch (err) {
                 console.error("Error al guardar:", err);
@@ -155,7 +155,7 @@
                     alert('🗑️ Producto eliminado físicamente de la base de datos');
                     cargarProductos();
                 } else {
-                    alert('❌ No se pudo eliminar el producto');
+                    alert(' No se pudo eliminar el producto');
                 }
             } catch (err) {
                 console.error("Error al eliminar:", err);

@@ -6,16 +6,15 @@
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
         .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+        .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 8px; }
         input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
-        .btn-del { background: #dc3545; font-weight: bold; }
+        .btn-del { background: #dc3545; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #333; color: white; }
         .total-box { font-size: 1.8rem; font-weight: bold; text-align: right; color: #28a745; margin-top: 10px; }
-        .badge-promo { background: #ffc107; color: #000; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .original-price { font-size: 0.85rem; color: #888; text-decoration: line-through; display: block; }
+        .badge-promo { background: #ffc107; color: #000; padding: 2px 4px; border-radius: 3px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -23,28 +22,27 @@
     <h1>Módulo de Ventas</h1>
 
     <div class="card">
-        <h2>Ingreso de Productos</h2>
+        <h2>Productos</h2>
         <div id="contenedor-filas">
             <div class="fila-producto">
-                <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
+                <input type="number" class="idProducto" placeholder="ID" style="width: 70px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Cód. Promo" style="width: 110px;">
+                <input type="text" class="promo" placeholder="Promo" style="width: 100px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             </div>
         </div>
         <br>
-        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Añadir Fila</button>
-        <button onclick="procesarVenta()" style="background:#17a2b8;">1. Cargar y Aplicar</button>
-        <button onclick="comprar()" style="background:#28a745; float: right;">2. Finalizar Venta</button>
+        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Fila</button>
+        <button onclick="procesarVenta()" style="background:#17a2b8;">Cargar y Aplicar</button>
+        <button onclick="comprar()" style="background:#28a745; float: right;">Finalizar Venta</button>
     </div>
 
     <div id="resumenVenta" class="card" style="display:none;">
-        <h3>Resumen de Cobro</h3>
         <table id="tablaResumen">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Precio Unit.</th>
+                    <th>Precio</th>
                     <th>Cant.</th>
                     <th>Subtotal</th>
                 </tr>
@@ -59,23 +57,21 @@
             const div = document.createElement('div');
             div.className = 'fila-producto';
             div.innerHTML = `
-                <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
+                <input type="number" class="idProducto" placeholder="ID" style="width: 70px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Cód. Promo" style="width: 110px;">
+                <input type="text" class="promo" placeholder="Promo" style="width: 100px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             `;
             document.getElementById('contenedor-filas').appendChild(div);
         }
 
         function eliminarFila(btn) {
-            const filas = document.querySelectorAll('.fila-producto');
-            if (filas.length > 1) btn.parentElement.remove();
+            if (document.querySelectorAll('.fila-producto').length > 1) btn.parentElement.remove();
         }
 
         async function procesarVenta() {
-            // Importante: El carrito en el servidor debe estar vacío al iniciar el proceso
             const filas = document.querySelectorAll('.fila-producto');
-            
+            // Nota: Aquí se asume que el backend maneja el carrito globalmente.
             for (let fila of filas) {
                 const idProducto = fila.querySelector('.idProducto').value;
                 const cantidad = fila.querySelector('.cantidad').value;
@@ -89,10 +85,10 @@
                     });
                 }
             }
-            mostrarResumen();
+            actualizarTabla();
         }
 
-        async function mostrarResumen() {
+        async function actualizarTabla() {
             const res = await fetch('/ventas/carrito');
             const data = await res.json();
             const carrito = data.body;
@@ -101,21 +97,14 @@
                 const tbody = document.querySelector('#tablaResumen tbody');
                 tbody.innerHTML = carrito.map(item => `
                     <tr>
-                        <td>
-                            <strong>${item.nombre}</strong>
-                            ${item.descuento > 0 ? `<br><span class="badge-promo">PROMO -${item.descuento}%</span>` : ''}
-                        </td>
-                        <td>
-                            ${item.descuento > 0 ? `<span class="original-price">$${item.precioOriginal.toFixed(2)}</span>` : ''}
-                            $${item.precioVenta.toFixed(2)}
-                        </td>
+                        <td>${item.nombre} ${item.descuento > 0 ? `<span class="badge-promo">-${item.descuento}%</span>` : ''}</td>
+                        <td>$${item.precioVenta.toFixed(2)}</td>
                         <td>${item.cantidad}</td>
                         <td>$${item.subtotal.toFixed(2)}</td>
                     </tr>
                 `).join('');
-
                 const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
-                document.getElementById('granTotal').innerText = `TOTAL A PAGAR: $${total.toFixed(2)}`;
+                document.getElementById('granTotal').innerText = `TOTAL: $${total.toFixed(2)}`;
                 document.getElementById('resumenVenta').style.display = 'block';
             }
         }
@@ -123,10 +112,7 @@
         async function comprar() {
             if(!confirm("¿Cerrar venta?")) return;
             const res = await fetch('/ventas/comprar', { method: 'POST' });
-            if(res.ok) {
-                alert("Venta procesada con éxito.");
-                location.reload();
-            }
+            if(res.ok) { alert("Venta Exitosa"); location.reload(); }
         }
     </script>
 </body>

@@ -3,48 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Kitsune - Ventas</title>
+    <title>POS Kitsune - Módulo de Ventas</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .contenedor { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #2c3e50; color: white; }
-        .fila-producto { margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
-        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; }
-        .btn-primario { background-color: #27ae60; }
-        .btn-secundario { background-color: #2980b9; }
-        #resumenVenta { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
-        .total-seccion { text-align: right; font-size: 1.5em; font-weight: bold; margin-top: 15px; color: #c0392b; }
-        small { display: block; line-height: 1.2; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        
+        /* Estilo de las filas de entrada */
+        .fila-producto { display: flex; gap: 10px; margin-bottom: 15px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; align-items: center; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        .idProducto { flex: 2; }
+        .cantidad { width: 70px; }
+        .promo { flex: 1; }
+        
+        /* Botones */
+        .btn { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add { background-color: #3498db; color: white; }
+        .btn-remove { background-color: #e74c3c; color: white; }
+        .btn-process { background-color: #2ecc71; color: white; width: 100%; font-size: 16px; margin-top: 10px; }
+        .btn-confirm { background-color: #27ae60; color: white; width: 100%; margin-top: 20px; padding: 15px; font-size: 18px; }
+        .btn:hover { opacity: 0.8; }
+
+        /* Tabla de Resumen */
+        #resumenVenta { margin-top: 40px; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #ecf0f1; color: #2c3e50; }
+        .total-display { text-align: right; font-size: 2em; margin-top: 20px; color: #e67e22; font-weight: bold; }
+        .desc-info { color: #e74c3c; font-size: 0.85em; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="contenedor">
-    <h2>Nueva Venta</h2>
+<div class="container">
+    <h2>Nueva Operación de Venta</h2>
     
-    <div id="productosContenedor">
+    <div id="contenedorEntradas">
         <div class="fila-producto">
-            <input type="number" class="idProducto" placeholder="ID Producto" required>
-            <input type="number" class="cantidad" placeholder="Cant." value="1" min="1" style="width: 60px;">
-            <input type="text" class="promo" placeholder="Cód. Promo (Opcional)">
-            <button class="btn btn-secundario" onclick="agregarFila()">+</button>
+            <input type="text" class="idProducto" placeholder="ID del Producto" required>
+            <input type="number" class="cantidad" value="1" min="1" placeholder="Cant.">
+            <input type="text" class="promo" placeholder="Cupón de Descuento">
+            <button type="button" class="btn btn-add" onclick="agregarFila()">+</button>
         </div>
     </div>
 
-    <div style="margin-top: 20px;">
-        <button class="btn btn-primario" onclick="procesarVenta()">Cargar y Aplicar Resta</button>
-    </div>
+    <button class="btn btn-process" onclick="procesarVenta()">APLICAR PRODUCTOS Y DESCUENTOS</button>
 
-    <div id="resumenVenta" style="display: none;">
-        <h3>Resumen de Carrito</h3>
+    <div id="resumenVenta">
+        <h3>Detalle del Carrito</h3>
         <table id="tablaResumen">
             <thead>
                 <tr>
-                    <th>Producto</th>
-                    <th>Precio Unit.</th>
+                    <th>Descripción Producto</th>
+                    <th>Precio Unitario (Con Resta)</th>
                     <th>Cant.</th>
                     <th>Subtotal</th>
                 </tr>
@@ -52,30 +63,30 @@
             <tbody>
                 </tbody>
         </table>
-        <div class="total-seccion" id="granTotal">TOTAL: $0.00</div>
-        <button class="btn btn-primario" style="width: 100%; margin-top: 20px;" onclick="finalizarCompra()">Confirmar Venta y Restar Stock</button>
+        <div class="total-display" id="granTotal">TOTAL: $0.00</div>
+        <button class="btn btn-confirm" onclick="finalizarCompra()">REGISTRAR VENTA Y DESCONTAR STOCK</button>
     </div>
 </div>
 
 <script>
+    // --- Lógica de Filas Dinámicas ---
     function agregarFila() {
         const div = document.createElement('div');
         div.className = 'fila-producto';
         div.innerHTML = `
-            <input type="number" class="idProducto" placeholder="ID Producto">
-            <input type="number" class="cantidad" placeholder="Cant." value="1" min="1" style="width: 60px;">
-            <input type="text" class="promo" placeholder="Cód. Promo">
-            <button class="btn btn-secundario" onclick="this.parentElement.remove()">-</button>
+            <input type="text" class="idProducto" placeholder="ID del Producto">
+            <input type="number" class="cantidad" value="1" min="1">
+            <input type="text" class="promo" placeholder="Cupón de Descuento">
+            <button type="button" class="btn btn-remove" onclick="this.parentElement.remove()">-</button>
         `;
-        document.getElementById('productosContenedor').appendChild(div);
+        document.getElementById('contenedorEntradas').appendChild(div);
     }
 
+    // --- Procesamiento de Datos ---
     async function procesarVenta() {
         const filas = document.querySelectorAll('.fila-producto');
         
-        // Limpiamos el carrito en el servidor antes de empezar para evitar duplicados
-        // Si no tienes una ruta para limpiar, esta parte solo procesará los nuevos
-        
+        // Enviamos cada producto al controlador
         for (let fila of filas) {
             const idProducto = fila.querySelector('.idProducto').value;
             const cantidad = fila.querySelector('.cantidad').value;
@@ -90,25 +101,28 @@
             }
         }
 
-        // Una vez cargados todos, obtenemos el estado final del carrito
+        // Recuperamos el carrito actualizado del servidor
         const res = await fetch('/ventas/carrito');
         const data = await res.json();
-        actualizarInterfaz(data.body);
+        renderizarTabla(data.body);
     }
 
-    function actualizarInterfaz(carrito) {
+    // --- Renderizado de la Tabla (Aquí se asegura la visualización correcta) ---
+    function renderizarTabla(carrito) {
         const tbody = document.querySelector('#tablaResumen tbody');
         tbody.innerHTML = ""; 
 
         if (!carrito || carrito.length === 0) return;
 
         carrito.forEach(item => {
+            // item.nombre es el nombre ("2222")
+            // item.precioVenta es el precio ya con el descuento (de 4444 a 3999.60)
             const fila = `
                 <tr>
                     <td><strong>${item.nombre}</strong></td>
                     <td>
                         $${parseFloat(item.precioVenta).toFixed(2)}
-                        ${item.descuento > 0 ? `<br><small style="color:red">(-${item.descuento}%)</small>` : ''}
+                        ${item.descuento > 0 ? `<br><span class="desc-info">Descuento del ${item.descuento}%</span>` : ''}
                     </td>
                     <td>${item.cantidad}</td>
                     <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
@@ -116,24 +130,26 @@
             tbody.innerHTML += fila;
         });
 
-        const totalFinal = carrito.reduce((acc, i) => acc + parseFloat(i.subtotal), 0);
-        document.getElementById('granTotal').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
+        // Sumar todos los subtotales para el Gran Total
+        const totalAcumulado = carrito.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+        document.getElementById('granTotal').innerText = `TOTAL: $${totalAcumulado.toFixed(2)}`;
         document.getElementById('resumenVenta').style.display = 'block';
     }
 
+    // --- Acción Final ---
     async function finalizarCompra() {
         try {
             const res = await fetch('/ventas/comprar', { method: 'POST' });
             const data = await res.json();
             
             if (!data.error) {
-                alert('Venta realizada con éxito y stock actualizado');
-                location.reload();
+                alert('Venta procesada correctamente. Se ha actualizado el stock en el inventario.');
+                location.reload(); // Recarga para limpiar todo
             } else {
                 alert('Error: ' + data.body);
             }
         } catch (err) {
-            alert('Error al conectar con el servidor');
+            alert('Error de conexión con el POS.');
         }
     }
 </script>

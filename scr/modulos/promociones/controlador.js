@@ -28,7 +28,7 @@ exports.obtenerPromocion = async (req, res) => {
 
 exports.crearPromocion = async (req, res) => {
     try {
-        // El id es AUTO_INCREMENT, no lo enviamos
+        // El id es AUTO_INCREMENT
         await db.agregar(TABLA, req.body);
         respuestas.success(req, res, 'Promoción creada', 201);
     } catch (err) {

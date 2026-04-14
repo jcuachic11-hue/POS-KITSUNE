@@ -10,7 +10,7 @@ function uno(id) {
 }
 
 function guardarProducto(body) {
-    // Si el body trae id, db.agregar hará un UPDATE automáticamente
+    
     return db.agregar(TABLA, body);
 }
 
@@ -19,7 +19,7 @@ function eliminarProducto(id) {
 }
 
 module.exports = {
-    id: (body) => body.id, // Campo id extraído del body si es necesario
+    id: (body) => body.id, 
     listarProductos,
     uno,
     guardarProducto,

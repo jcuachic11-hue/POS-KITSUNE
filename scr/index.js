@@ -10,13 +10,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- SERVIR ARCHIVOS ESTÁTICOS ---
-// Usamos path.join(__dirname, 'publico') porque index.js está DENTRO de scr.
-// Esto buscará los archivos en scr/publico/
+
 app.use(express.static(path.join(__dirname, 'publico')));
 
-// --- IMPORTACIÓN DE RUTAS ---
-// Al estar en scr/index.js, las rutas están en ./modulos/...
+
+
 const productos = require('./modulos/productos/rutas');
 const usuarios = require('./modulos/usuarios/rutas');
 const ventas = require('./modulos/ventas/rutas');

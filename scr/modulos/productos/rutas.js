@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
         });
 });
 
-// CONSULTAR UNO (Añadido siguiendo tu estilo)
+// CONSULTAR UNO 
 router.get('/uno', (req, res) => {
     controlador.uno(req.body.id)
         .then((items) => { 

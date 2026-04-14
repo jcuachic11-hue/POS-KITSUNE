@@ -2,7 +2,7 @@ const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
 
 async function devolverProducto(req, res) {
-    // Leemos exactamente lo que manda tu HTML
+    
     const { productoId, cantidad } = req.body;
 
     try {
@@ -10,7 +10,7 @@ async function devolverProducto(req, res) {
             return respuestas.error(req, res, 'Faltan datos: productoId o cantidad', 400);
         }
 
-        // Ejecutamos la suma en el stock (la función que ya pusimos en mysql.js)
+      
         await db.sumarStock(productoId, cantidad);
 
         return respuestas.success(req, res, {

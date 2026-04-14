@@ -16,11 +16,10 @@ exports.listarUsuarios = async (req, res) => {
 // Crear Usuario (POST)
 exports.crearUsuario = async (req, res) => {
     try {
-        // En productos funcionó porque mandamos el body directo
-        // Solo aseguramos que el estado sea un número para MySQL
+       
         if (req.body.estado) req.body.estado = parseInt(req.body.estado);
 
-        // La función agregar del archivo mysql.js usa: INSERT INTO ?? SET ?
+        
         await db.agregar(TABLA, req.body);
         
         respuestas.success(req, res, 'Usuario guardado', 201);
@@ -33,7 +32,7 @@ exports.crearUsuario = async (req, res) => {
 // Actualizar Usuario (PUT)
 exports.actualizarUsuario = async (req, res) => {
     try {
-        // Para que db.agregar sepa que es UPDATE, el objeto debe tener el ID
+        
         req.body.id = req.params.id;
         if (req.body.estado) req.body.estado = parseInt(req.body.estado);
 

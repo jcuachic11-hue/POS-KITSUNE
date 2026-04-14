@@ -14,7 +14,8 @@
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #333; color: white; }
         .total-box { font-size: 1.8rem; font-weight: bold; text-align: right; color: #28a745; margin-top: 10px; }
-        .badge-promo { background: #ffc107; color: #000; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem; }
+        .badge-promo { background: #ffc107; color: #000; padding: 2px 5px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .original-price { font-size: 0.85rem; color: #888; text-decoration: line-through; display: block; }
     </style>
 </head>
 <body>
@@ -27,14 +28,14 @@
             <div class="fila-producto">
                 <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Código Promo" style="width: 110px;">
+                <input type="text" class="promo" placeholder="Cód. Promo" style="width: 110px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             </div>
         </div>
         <br>
-        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Fila</button>
-        <button onclick="procesarVenta()" style="background:#17a2b8;">Cargar Productos</button>
-        <button onclick="comprar()" style="background:#28a745; float: right;">Finalizar Venta</button>
+        <button onclick="agregarFilaInput()" style="background:#6c757d;">+ Añadir Fila</button>
+        <button onclick="procesarVenta()" style="background:#17a2b8;">1. Cargar y Aplicar</button>
+        <button onclick="comprar()" style="background:#28a745; float: right;">2. Finalizar Venta</button>
     </div>
 
     <div id="resumenVenta" class="card" style="display:none;">
@@ -43,7 +44,7 @@
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Precio</th>
+                    <th>Precio Unit.</th>
                     <th>Cant.</th>
                     <th>Subtotal</th>
                 </tr>
@@ -60,7 +61,7 @@
             div.innerHTML = `
                 <input type="number" class="idProducto" placeholder="ID Prod" style="width: 80px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 60px;">
-                <input type="text" class="promo" placeholder="Código Promo" style="width: 110px;">
+                <input type="text" class="promo" placeholder="Cód. Promo" style="width: 110px;">
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             `;
             document.getElementById('contenedor-filas').appendChild(div);
@@ -72,8 +73,8 @@
         }
 
         async function procesarVenta() {
+            // Importante: El carrito en el servidor debe estar vacío al iniciar el proceso
             const filas = document.querySelectorAll('.fila-producto');
-            // Nota: En una versión real aquí podrías llamar a un fetch para limpiar el carrito actual
             
             for (let fila of filas) {
                 const idProducto = fila.querySelector('.idProducto').value;
@@ -101,26 +102,29 @@
                 tbody.innerHTML = carrito.map(item => `
                     <tr>
                         <td>
-                            ${item.nombre} 
-                            ${item.descuento > 0 ? `<span class="badge-promo">-${item.descuento}%</span>` : ''}
+                            <strong>${item.nombre}</strong>
+                            ${item.descuento > 0 ? `<br><span class="badge-promo">PROMO -${item.descuento}%</span>` : ''}
                         </td>
-                        <td>$${item.precioVenta.toFixed(2)}</td>
+                        <td>
+                            ${item.descuento > 0 ? `<span class="original-price">$${item.precioOriginal.toFixed(2)}</span>` : ''}
+                            $${item.precioVenta.toFixed(2)}
+                        </td>
                         <td>${item.cantidad}</td>
                         <td>$${item.subtotal.toFixed(2)}</td>
                     </tr>
                 `).join('');
 
                 const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
-                document.getElementById('granTotal').innerText = `TOTAL: $${total.toFixed(2)}`;
+                document.getElementById('granTotal').innerText = `TOTAL A PAGAR: $${total.toFixed(2)}`;
                 document.getElementById('resumenVenta').style.display = 'block';
             }
         }
 
         async function comprar() {
-            if(!confirm("¿Desea cerrar la venta?")) return;
+            if(!confirm("¿Cerrar venta?")) return;
             const res = await fetch('/ventas/comprar', { method: 'POST' });
             if(res.ok) {
-                alert("Venta Exitosa");
+                alert("Venta procesada con éxito.");
                 location.reload();
             }
         }

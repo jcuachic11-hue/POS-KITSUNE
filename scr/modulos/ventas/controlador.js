@@ -7,43 +7,45 @@ async function agregarCarrito(req, res) {
     try {
         const { idProducto, cantidad, codigoPromo } = req.body; 
         
-        // 1. Buscamos el producto
         const producto = await db.uno('productos', idProducto);
         if (!producto) {
             return respuestas.error(req, res, 'Producto no encontrado', 404);
         }
 
-        let precioFinal = producto.precio;
+        let precioOriginal = producto.precio;
         let porcentajeDescuento = 0;
+        let precioConDescuento = precioOriginal;
 
-        // 2. Lógica de Promoción (Si el usuario escribió algo)
+        // --- LÓGICA DE DESCUENTO ---
         if (codigoPromo && codigoPromo.trim() !== "") {
-            // Buscamos en la tabla promociones por el ID/Código
             const promo = await db.uno('promociones', codigoPromo);
             
-            if (promo) {
-                porcentajeDescuento = promo.valor; // Ejemplo: 10
-                const descuento = (producto.precio * porcentajeDescuento) / 100;
-                precioFinal = producto.precio - descuento;
+            if (promo && promo.valor) {
+                porcentajeDescuento = parseFloat(promo.valor); // Ejemplo: 15
+                // Operación matemática: Precio - (Precio * 0.15)
+                const montoDescuento = precioOriginal * (porcentajeDescuento / 100);
+                precioConDescuento = precioOriginal - montoDescuento;
+                
+                console.log(`Promo aplicada: ${codigoPromo} (-${porcentajeDescuento}%)`);
             }
         }
 
         const nuevoItem = {
             id: idProducto,
             nombre: producto.nombre,
-            precioOriginal: producto.precio,
-            precioVenta: precioFinal,
+            precioOriginal: precioOriginal,
+            precioVenta: precioConDescuento, // Este es el que se cobra
             descuento: porcentajeDescuento,
             cantidad: parseInt(cantidad),
-            subtotal: precioFinal * parseInt(cantidad)
+            subtotal: precioConDescuento * parseInt(cantidad)
         };
         
         carrito.push(nuevoItem);
         respuestas.success(req, res, nuevoItem, 201);
 
     } catch (err) {
-        console.error(err);
-        respuestas.error(req, res, 'Error al procesar producto', 500);
+        console.error("Error en agregarCarrito:", err);
+        respuestas.error(req, res, 'Error interno', 500);
     }
 }
 

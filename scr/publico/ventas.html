@@ -9,10 +9,14 @@
         .fila-producto { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
         input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
-        .btn-add { background: #6c757d; margin-bottom: 10px; }
-        .btn-del { background: #dc3545; padding: 8px 12px; } /* Estilo para el botón eliminar */
-        #resultado { background: #333; color: #9fff9d; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: monospace; }
-        .precio-unit { color: #28a745; font-weight: bold; min-width: 60px; }
+        .btn-add { background: #6c757d; }
+        .btn-del { background: #dc3545; padding: 8px 12px; }
+        
+        /* Estilos para la tabla de visualización */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #333; color: white; }
+        .total-section { font-size: 1.5rem; font-weight: bold; text-align: right; margin-top: 15px; color: #28a745; }
     </style>
 </head>
 <body>
@@ -25,18 +29,30 @@
             <div class="fila-producto">
                 <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
-                <span class="precio-unit"></span>
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             </div>
         </div>
         <button class="btn-add" onclick="agregarFilaInput()">+ Añadir Fila</button>
         <hr>
-        <button onclick="procesarFilas()" style="background: #17a2b8;">1. Cargar Productos</button>
-        <button onclick="verTotales()">2. Calcular Total</button>
-        <button onclick="comprar()" style="background: #28a745;">3. Finalizar Venta</button>
+        <button onclick="procesarVentaCompleta()" style="background: #17a2b8;">Cargar y Ver Resumen</button>
+        <button onclick="comprar()" style="background: #28a745;">Finalizar Venta</button>
     </div>
 
-    <pre id="resultado">Esperando acciones...</pre>
+    <div id="resumenVenta" class="card" style="display:none;">
+        <h3>Resumen de la Venta</h3>
+        <table id="tablaResumen">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio Unit.</th>
+                    <th>Cant.</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div id="granTotal" class="total-section"></div>
+    </div>
 
     <script>
         function agregarFilaInput() {
@@ -45,7 +61,6 @@
             div.innerHTML = `
                 <input type="number" class="idProducto" placeholder="ID Producto" style="width: 100px;">
                 <input type="number" class="cantidad" value="1" min="1" style="width: 70px;">
-                <span class="precio-unit"></span>
                 <button class="btn-del" onclick="eliminarFila(this)">X</button>
             `;
             document.getElementById('contenedor-filas').appendChild(div);
@@ -53,63 +68,61 @@
 
         function eliminarFila(btn) {
             const filas = document.querySelectorAll('.fila-producto');
-            // Evitamos borrar la última fila si quieres que siempre haya una visible
-            if (filas.length > 1) {
-                btn.parentElement.remove();
-            } else {
-                // Si es la única, solo limpiamos los inputs
-                const fila = btn.parentElement;
-                fila.querySelector('.idProducto').value = '';
-                fila.querySelector('.cantidad').value = '1';
-                fila.querySelector('.precio-unit').innerText = '';
-            }
+            if (filas.length > 1) btn.parentElement.remove();
         }
 
-        async function procesarFilas() {
-            // Limpiamos el carrito en el servidor antes de cargar las filas actuales 
-            // para que no se dupliquen si el usuario da click varias veces
-            // Nota: Podrías añadir un endpoint /ventas/limpiar si fuera necesario
-            
+        async function procesarVentaCompleta() {
             const filas = document.querySelectorAll('.fila-producto');
-            let procesados = 0;
-
+            
+            // Procesamos cada fila enviándola al carrito del servidor
             for (let fila of filas) {
                 const idProducto = fila.querySelector('.idProducto').value;
                 const cantidad = fila.querySelector('.cantidad').value;
 
                 if (idProducto) {
-                    const res = await fetch('/ventas/carrito', {
+                    await fetch('/ventas/carrito', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ idProducto, cantidad })
                     });
-                    const data = await res.json();
-                    if (!data.error) {
-                        fila.querySelector('.precio-unit').innerText = `$${data.body.precio}`;
-                        procesados++;
-                    }
                 }
             }
-            document.getElementById('resultado').innerText = `Productos cargados en memoria: ${procesados}`;
+            // Una vez cargados, actualizamos la tabla visual
+            actualizarInterfaz();
         }
 
-        async function verTotales() {
-            const res = await fetch('/ventas/totales');
+        async function actualizarInterfaz() {
+            const res = await fetch('/ventas/carrito');
             const data = await res.json();
-            document.getElementById('resultado').innerText = "RESUMEN DE VENTA:\n" + JSON.stringify(data.body, null, 2);
+            const carrito = data.body;
+
+            if (carrito.length > 0) {
+                const tbody = document.querySelector('#tablaResumen tbody');
+                tbody.innerHTML = carrito.map(item => `
+                    <tr>
+                        <td>${item.nombre}</td>
+                        <td>$${item.precio}</td>
+                        <td>${item.cantidad}</td>
+                        <td>$${item.subtotal}</td>
+                    </tr>
+                `).join('');
+
+                // Calculamos el total
+                const total = carrito.reduce((acc, i) => acc + i.subtotal, 0);
+                document.getElementById('granTotal').innerText = `TOTAL: $${total.toFixed(2)}`;
+                document.getElementById('resumenVenta').style.display = 'block';
+            }
         }
 
         async function comprar() {
-            if(!confirm("¿Desea cerrar la venta y descontar inventario?")) return;
+            if(!confirm("¿Confirmar cobro y finalizar?")) return;
 
             const res = await fetch('/ventas/comprar', { method: 'POST' });
             const data = await res.json();
             
             if(!data.error) {
-                alert("¡Venta Finalizada!");
+                alert("¡Venta Realizada!");
                 location.reload(); 
-            } else {
-                alert("Error: " + data.body);
             }
         }
     </script>

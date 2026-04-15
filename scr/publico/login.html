@@ -46,7 +46,7 @@
     
     async function cargarCaptcha() {
       try {
-        const res = await fetch("./modulos/auth/rutas"); // Ajusta a tu ruta de express
+        const res = await fetch("/login/captcha"); // Ajusta a tu ruta de express
         const svg = await res.text();
         document.getElementById('captcha-img').innerHTML = svg;
       } catch (err) {

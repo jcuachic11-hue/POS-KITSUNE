@@ -9,6 +9,16 @@
     input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
     button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
     button:hover { background: #218838; }
+
+    /* ========================================== */
+    /* SECCIÓN DE PURO CAPTCHA - ESTILOS (INICIO) */
+    /* ========================================== */
+    #captcha-container { text-align: center; margin-bottom: 10px; }
+    #captcha-img { cursor: pointer; background: #eee; border-radius: 4px; display: block; margin-bottom: 5px; }
+    #captcha-img svg { width: 100%; height: auto; border-radius: 4px; }
+    /* ========================================== */
+    /* SECCIÓN DE PURO CAPTCHA - ESTILOS (FIN)    */
+    /* ========================================== */
   </style>
 </head>
 <body>
@@ -19,21 +29,50 @@
       <input type="text" id="usuario" required>
       <label>Contraseña:</label>
       <input type="password" id="password" required>
+
+      <div id="captcha-container">
+        <div id="captcha-img" title="Clic para recargar">
+            </div>
+        <input type="text" id="captchaInput" placeholder="Código de la imagen" required>
+      </div>
       <button type="submit">Entrar</button>
     </form>
   </div>
 
   <script>
+
+    
+    // ========================================== 
+    
+    async function cargarCaptcha() {
+      try {
+        const res = await fetch("/api/usuarios/captcha"); // Ajusta a tu ruta de express
+        const svg = await res.text();
+        document.getElementById('captcha-img').innerHTML = svg;
+      } catch (err) {
+        console.error("Error al cargar captcha");
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarCaptcha);
+    document.getElementById('captcha-img').onclick = cargarCaptcha;
+    // ========================================== 
+
+
     document.getElementById('loginForm').addEventListener('submit', async e => {
       e.preventDefault();
       const usuario = document.getElementById('usuario').value;
       const password = document.getElementById('password').value;
+      
+      // Capturamos el valor del captcha
+      const captchaInput = document.getElementById('captchaInput').value;
 
       try {
         const res = await fetch("/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ usuario, password })
+          // Enviamos el captchaInput junto con las credenciales
+          body: JSON.stringify({ usuario, password, captchaInput })
         });
 
         const data = await res.json();
@@ -42,9 +81,10 @@
         if (!data.error && token) {
           localStorage.setItem("token", token);
           localStorage.setItem("usuario", usuario); 
-          window.location.href = "index.html"; // Redirección correcta
+          window.location.href = "index.html"; 
         } else {
           alert("❌ Error: " + (data.body || "Credenciales incorrectas"));
+          cargarCaptcha(); // Recargar si falla
         }
       } catch (err) {
         alert("Error de conexión con el servidor");

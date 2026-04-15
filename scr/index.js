@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const app = express();
 
+const session = require('express-session'); //para captcha
+
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
@@ -13,7 +15,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, 'publico')));
 
+app.use(session({ //captcha 
 
+    // Si process.env.SESSION_SECRET no existe, usa la frase de la derecha
+    secret: process.env.SESSION_SECRET || 'clave_de_emergencia_kitsune_123', 
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }
+}));
 
 const productos = require('./modulos/productos/rutas');
 const usuarios = require('./modulos/usuarios/rutas');
@@ -33,5 +42,5 @@ app.use('/promociones', promociones);
 // --- PUERTO ---
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor POS Kitsune corriendo en puerto ${PORT}`);
+    console.log(` Servidor POS Kitsune corriendo en puerto ${PORT}`);
 });

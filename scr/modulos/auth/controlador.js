@@ -1,11 +1,47 @@
 const db = require('../../bd/mysql'); // Importamos tu capa de base de datos
 const jwt = require('jsonwebtoken');
 const respuestas = require('../../red/respuestas');
+const svgCaptcha = require('svg-captcha'); // Importamos la librería del captcha
+
+// ==========================================
+// FUNCIÓN PARA GENERAR CAPTCHA (INICIO)
+// ==========================================
+async function obtenerCaptcha(req, res) {
+    const captcha = svgCaptcha.create({
+        size: 6,
+        noise: 3,
+        color: true,
+        background: '#f0f2f5'
+    });
+
+    // Guardamos el texto en la sesión para validar después
+    req.session.captcha = captcha.text.toLowerCase();
+    
+    // Enviamos el SVG al frontend
+    res.type('svg');
+    res.status(200).send(captcha.data);
+}
+// ==========================================
+// FUNCIÓN PARA GENERAR CAPTCHA (FIN)
+// ==========================================
 
 async function login(req, res) {
-    const { usuario, password } = req.body;
+    // Añadimos captchaInput a la destrucción del body
+    const { usuario, password, captchaInput } = req.body;
+
     try {
-        
+        // ==========================================
+        // VALIDACIÓN DE PURO CAPTCHA (INICIO)
+        // ==========================================
+        if (!req.session.captcha || !captchaInput || captchaInput.toLowerCase() !== req.session.captcha) {
+            return respuestas.error(req, res, 'Código CAPTCHA incorrecto o expirado', 400);
+        }
+        // Si es correcto, lo eliminamos de la sesión para que no se reutilice
+        delete req.session.captcha;
+        // ==========================================
+        // VALIDACIÓN DE PURO CAPTCHA (FIN)
+        // ==========================================
+
         const user = await db.uno('usuarios', usuario);
 
         if (!user) {
@@ -33,4 +69,7 @@ async function login(req, res) {
     }
 }
 
-module.exports = { login };
+module.exports = { 
+    login,
+    obtenerCaptcha // No olvides exportarlo para usarlo en tus rutas
+};

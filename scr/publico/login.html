@@ -41,12 +41,12 @@
 
   <script>
 
-    
+
     // ========================================== 
     
     async function cargarCaptcha() {
       try {
-        const res = await fetch("/api/usuarios/captcha"); // Ajusta a tu ruta de express
+        const res = await fetch("/auth/captcha"); // Ajusta a tu ruta de express
         const svg = await res.text();
         document.getElementById('captcha-img').innerHTML = svg;
       } catch (err) {

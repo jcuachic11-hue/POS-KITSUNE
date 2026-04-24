@@ -1,3 +1,4 @@
+//por si uso tokens
 const jwt = require('jsonwebtoken');
 const respuestas = require('./red/respuestas'); // Ruta corregida según tu estructura
 

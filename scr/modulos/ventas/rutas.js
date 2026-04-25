@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
 
+const { verificarMiddleware } = require('../../admin');
+
 // RUTAS
 router.post('/carrito', verificarMiddleware, controlador.agregarCarrito);
 router.get('/carrito', verificarMiddleware, controlador.listarCarrito);

@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const session = require('express-session'); // <--- 1. AGREGA ESTO
 require('dotenv').config();
 
 const app = express();
@@ -19,16 +20,23 @@ const promociones = require('./modulos/promociones/rutas');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // <--- ¡Asegúrate de que esté aquí!
+app.use(cookieParser()); 
 
+// 2. AGREGA ESTA CONFIGURACIÓN (Es vital para el captcha)
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'clave_secreta_kitsune',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Mantén false si no tienes SSL configurado en Railway
+}));
 
+// ENDPOINTS
 app.use('/productos', productos);
 app.use('/usuarios', usuarios);
 app.use('/ventas', ventas);
 app.use('/devoluciones', devoluciones);
 app.use('/login', authRutas);
 app.use('/promociones', promociones);
-
 
 app.use(express.static(path.join(__dirname, 'publico')));
 

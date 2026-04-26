@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
+const { verificarMiddleware } = require('../../admin'); 
 
-const  verificarMiddleware  = require('../../admin');
+// PROTECCIÓN TOTAL: Cualquier ruta definida abajo pasará por el portero
+router.use(verificarMiddleware);
 
-// RUTAS
-router.post('/carrito', verificarMiddleware, controlador.agregarCarrito);
-router.get('/carrito', verificarMiddleware, controlador.listarCarrito);
-router.get('/totales', verificarMiddleware, controlador.totalesCarrito);
-router.post('/comprar', verificarMiddleware, controlador.comprar);
+router.post('/carrito', controlador.agregarCarrito);
+router.get('/carrito', controlador.listarCarrito);
+router.get('/totales', controlador.totalesCarrito);
+router.post('/comprar', controlador.comprar);
 
-module.exports = router; // 
+module.exports = router;

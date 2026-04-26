@@ -77,12 +77,19 @@
                 await fetch('/ventas/carrito', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // <--- Corrección: Envío de cookie
                     body: JSON.stringify({ idProducto, cantidad, codigoPromo })
                 });
             }
         }
 
-        const res = await fetch('/ventas/carrito');
+        const res = await fetch('/ventas/carrito', { credentials: 'include' }); // <--- Corrección: Envío de cookie
+        
+        if (res.status === 403) {
+            alert('Sesión no válida. Por favor inicia sesión.');
+            return;
+        }
+
         const data = await res.json();
         actualizarInterfaz(data.body);
     }
@@ -114,11 +121,22 @@
 
     async function finalizarCompra() {
         try {
-            const res = await fetch('/ventas/comprar', { method: 'POST' });
+            const res = await fetch('/ventas/comprar', { 
+                method: 'POST',
+                credentials: 'include' // <--- Corrección: Envío de cookie
+            });
+
+            if (res.status === 403) {
+                alert('No tienes permiso para realizar esta acción.');
+                return;
+            }
+
             const data = await res.json();
             if (!data.error) {
                 alert('Venta realizada con éxito');
                 location.reload();
+            } else {
+                alert('Error: ' + data.body);
             }
         } catch (err) {
             alert('Error de conexión');

@@ -15,6 +15,8 @@ router.post('/login', (req, res) => {
         // CREAMOS LA COOKIE
         res.cookie('mi_token_pos', 'USUARIO_VALIDO_ABC', {
             httpOnly: true,
+            secure: true,
+            sameSite: 'none',
             maxAge: 1000 * 60 * 10 // Expira en 10 minutos
         });
         res.send('Login exitoso. <a href="/admin/panel">Ir al panel secreto</a>');

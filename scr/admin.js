@@ -15,4 +15,4 @@ function verificarMiddleware(req, res, next) {
 router.get('/panel', verificarMiddleware, (req, res) => {
     res.send('<h1>Bienvenido al Panel de Control de Kitsune</h1> <p>Solo tú puedes ver esto.</p> <a href="/logout">Salir</a>');
 });
-module.exports = router;
+module.exports = { verificarMiddleware };

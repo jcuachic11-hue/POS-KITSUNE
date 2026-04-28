@@ -9,16 +9,9 @@
     input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
     button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
     button:hover { background: #218838; }
-
-    /* ========================================== */
-    /* SECCIÓN DE PURO CAPTCHA - ESTILOS (INICIO) */
-    /* ========================================== */
     #captcha-container { text-align: center; margin-bottom: 10px; }
-    #captcha-img { cursor: pointer; background: #eee; border-radius: 4px; display: block; margin-bottom: 5px; }
+    #captcha-img { cursor: pointer; background: #eee; border-radius: 4px; display: block; margin-bottom: 5px; min-height: 50px; }
     #captcha-img svg { width: 100%; height: auto; border-radius: 4px; }
-    /* ========================================== */
-    /* SECCIÓN DE PURO CAPTCHA - ESTILOS (FIN)    */
-    /* ========================================== */
   </style>
 </head>
 <body>
@@ -26,27 +19,23 @@
     <h2 style="text-align: center;">Iniciar Sesión</h2>
     <form id="loginForm">
       <label>Usuario:</label>
-      <input type="text" id="usuario" required>
+      <input type="text" id="usuario" required autocomplete="username">
       <label>Contraseña:</label>
-      <input type="password" id="password" required>
+      <input type="password" id="password" required autocomplete="current-password">
 
       <div id="captcha-container">
-        <div id="captcha-img" title="Clic para recargar">
-            </div>
-        <input type="text" id="captchaInput" placeholder="Código de la imagen" required>
+        <div id="captcha-img" title="Clic para recargar"></div>
+        <input type="text" id="captchaInput" placeholder="Código de la imagen" required autocomplete="off">
       </div>
       <button type="submit">Entrar</button>
     </form>
   </div>
 
   <script>
-
-
-    // ========================================== 
     
     async function cargarCaptcha() {
       try {
-        const res = await fetch("/login/captcha"); // Ajusta a tu ruta de express
+        const res = await fetch("/login/captcha", { credentials: 'include' }); 
         const svg = await res.text();
         document.getElementById('captcha-img').innerHTML = svg;
       } catch (err) {
@@ -56,35 +45,33 @@
 
     document.addEventListener('DOMContentLoaded', cargarCaptcha);
     document.getElementById('captcha-img').onclick = cargarCaptcha;
-    // ========================================== 
-
 
     document.getElementById('loginForm').addEventListener('submit', async e => {
       e.preventDefault();
       const usuario = document.getElementById('usuario').value;
       const password = document.getElementById('password').value;
-      
-      // Capturamos el valor del captcha
       const captchaInput = document.getElementById('captchaInput').value;
 
       try {
         const res = await fetch("/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // Enviamos el captchaInput junto con las credenciales
+          credentials: 'include', 
           body: JSON.stringify({ usuario, password, captchaInput })
         });
 
         const data = await res.json();
-        const token = data.body?.token || data.token;
 
-        if (!data.error && token) {
-          localStorage.setItem("token", token);
+        if (!data.error) {
+          
           localStorage.setItem("usuario", usuario); 
-          window.location.href = "index.html"; 
+          
+         
+          window.location.href = "ventas.html"; 
         } else {
           alert("❌ Error: " + (data.body || "Credenciales incorrectas"));
-          cargarCaptcha(); // Recargar si falla
+          cargarCaptcha(); 
+          document.getElementById('captchaInput').value = ""; // Limpiar input
         }
       } catch (err) {
         alert("Error de conexión con el servidor");

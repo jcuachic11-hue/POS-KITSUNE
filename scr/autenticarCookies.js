@@ -17,7 +17,7 @@ router.post('/login', (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            maxAge: 1000 * 60 * 10 // Expira en 10 minutos
+            maxAge: 1000 * 60 * 60 // Expira en 1 hora
         });
         res.send('Login exitoso. <a href="/admin/panel">Ir al panel secreto</a>');
     } else {

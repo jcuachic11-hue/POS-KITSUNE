@@ -3,6 +3,8 @@ const router = express.Router();
 
 //ver si cookie es correcta o no 
 function verificarMiddleware(req, res, next) {
+console.log("Cookies en el servidor:", req.cookies);
+
     const token = req.cookies.mi_token_pos;
 
     //if (token === 'USUARIO_VALIDO_ABC') {

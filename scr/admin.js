@@ -5,7 +5,10 @@ const router = express.Router();
 function verificarMiddleware(req, res, next) {
 console.log("Cookies en el servidor:", req.cookies);
 
-    const token = req.cookies.mi_token_pos;
+if (req.cookies.mi_token_pos === 'USUARIO_VALIDO_ABC') {
+        return next();
+    }
+    //const token = req.cookies.mi_token_pos;
 
     //if (token === 'USUARIO_VALIDO_ABC') {
        // next(); //cuando cookie es correcta   

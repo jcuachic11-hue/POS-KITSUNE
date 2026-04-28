@@ -32,7 +32,6 @@
   </div>
 
   <script>
-    
     async function cargarCaptcha() {
       try {
         const res = await fetch("/login/captcha", { credentials: 'include' }); 
@@ -56,22 +55,20 @@
         const res = await fetch("/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: 'include', 
+          credentials: 'include',
           body: JSON.stringify({ usuario, password, captchaInput })
         });
 
         const data = await res.json();
 
         if (!data.error) {
-          
           localStorage.setItem("usuario", usuario); 
-          
-         
-          window.location.href = "ventas.html"; 
+          // Corrección aplicada: Redirección a index.html
+          window.location.href = "index.html"; 
         } else {
           alert("❌ Error: " + (data.body || "Credenciales incorrectas"));
-          cargarCaptcha(); 
-          document.getElementById('captchaInput').value = ""; // Limpiar input
+          cargarCaptcha();
+          document.getElementById('captchaInput').value = "";
         }
       } catch (err) {
         alert("Error de conexión con el servidor");

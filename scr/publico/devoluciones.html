@@ -45,35 +45,7 @@
       try {
         const res = await fetch("/devoluciones", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: 'include', // <--- Envía la cookie de seguridad
-          body: JSON.stringify({ 
-            productoId: productoId, 
-            cantidad: parseInt(cantidad) 
-          })
-        });
-
-        // Si el portero nos rebota por falta de sesión
-        if (res.status === 403) {
-            alert("Sesión expirada o no válida. Inicia sesión de nuevo.");
-            window.location.href = "login.html";
-            return;
-        }
-
-        const data = await res.json();
-
-        if (data.error === false) {
-          const info = data.body;
-          alert(`✅ Éxito: ${info.mensaje}\nID: ${info.productoId}\nCantidad: ${info.cantidad}`);
-          document.getElementById("formDevolucion").reset();
-        } else {
-          alert("❌ Error: " + (data.body || "No se pudo procesar la devolución"));
-        }
-      } catch (err) {
-        console.error("Error en el fetch:", err);
-        alert("Error de conexión con el servidor");
-      }
-    });
-  </script>
-</body>
-</html>
+          headers: {
+            "Content-Type": "application/json"
+          },
+          // CRÍTICO: Permite que el navegador envíe la cookie de sesión

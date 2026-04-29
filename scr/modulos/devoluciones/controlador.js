@@ -2,7 +2,6 @@ const db = require('../../bd/mysql');
 const respuestas = require('../../red/respuestas');
 
 async function devolverProducto(req, res) {
-    
     const { productoId, cantidad } = req.body;
 
     try {
@@ -10,7 +9,6 @@ async function devolverProducto(req, res) {
             return respuestas.error(req, res, 'Faltan datos: productoId o cantidad', 400);
         }
 
-      
         await db.sumarStock(productoId, cantidad);
 
         return respuestas.success(req, res, {
@@ -26,7 +24,6 @@ async function devolverProducto(req, res) {
 }
 
 async function listarDevoluciones(req, res) {
-    // Historial vacío por ahora
     return respuestas.success(req, res, [], 200);
 }
 

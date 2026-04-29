@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
-// const seguridad = require('./seguridad'); 
+const { verificarMiddleware } = require('../admin'); 
 
-// RUTAS
-// router.post('/', seguridad(), controlador.devolverProducto); 
+router.use(verificarMiddleware);
+
 router.post('/', controlador.devolverProducto); 
 router.get('/', controlador.listarDevoluciones);
 

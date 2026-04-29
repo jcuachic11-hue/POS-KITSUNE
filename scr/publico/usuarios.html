@@ -60,7 +60,13 @@
 
         async function cargarUsuarios() {
             try {
-                const res = await fetch(API_URL);
+                const res = await fetch(API_URL, { credentials: 'include' });
+                
+                if (res.status === 403) {
+                    window.location.href = "login.html";
+                    return;
+                }
+
                 const data = await res.json();
                 const lista = data.body || [];
                 const tbody = document.querySelector('#usuariosTable tbody');
@@ -87,27 +93,18 @@
             e.preventDefault();
             
             const idValue = document.getElementById('id').value;
-            
-            // Creamos el objeto base
             const datos = {
                 nombre: document.getElementById('nombre').value.trim(),
                 usuario: document.getElementById('usuario').value.trim(),
                 rol: document.getElementById('rol').value.trim(),
-                estado: parseInt(document.getElementById('estado').value) // Forzar número
+                estado: parseInt(document.getElementById('estado').value)
             };
 
-            // Solo agregar ID si existe (para evitar enviar "" a MySQL)
-            if (idValue) {
-                datos.id = parseInt(idValue);
-            }
+            if (idValue) datos.id = parseInt(idValue);
 
-            // Solo agregar password si el usuario escribió algo
             const pass = document.getElementById('password').value;
-            if (pass.trim() !== "") {
-                datos.password = pass;
-            }
+            if (pass.trim() !== "") datos.password = pass;
 
-            // Si hay ID usamos PUT, si no POST (Lógica REST)
             const method = idValue ? 'PUT' : 'POST';
             const url = idValue ? `${API_URL}/${idValue}` : API_URL;
 
@@ -115,9 +112,16 @@
                 const res = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(datos)
                 });
                 
+                if (res.status === 403) {
+                    alert("Sesión expirada o sin permisos");
+                    window.location.href = "login.html";
+                    return;
+                }
+
                 const result = await res.json();
 
                 if(!result.error) {
@@ -129,7 +133,7 @@
                 }
             } catch (err) { 
                 console.error("Error en submit:", err);
-                alert("Error de conexión con el servidor");
+                alert("Error de conexión");
             }
         });
 
@@ -139,14 +143,23 @@
             document.getElementById('usuario').value = usuario;
             document.getElementById('rol').value = rol;
             document.getElementById('estado').value = estado;
-            document.getElementById('password').value = ''; // Password siempre vacío al editar por seguridad
+            document.getElementById('password').value = ''; 
             window.scrollTo(0,0);
         }
 
         async function eliminarUsuario(id) {
             if(!confirm("¿Deseas eliminar definitivamente a este usuario?")) return;
             try {
-                const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/${id}`, { 
+                    method: 'DELETE',
+                    credentials: 'include' 
+                });
+
+                if (res.status === 403) {
+                    alert("No tienes permiso");
+                    return;
+                }
+
                 if(res.ok) cargarUsuarios();
             } catch (e) { console.error(e); }
         }

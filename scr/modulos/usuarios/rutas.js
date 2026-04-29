@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
-// const auth = require('../auth/middleware'); 
+const { verificarMiddleware } = require('../../admin'); 
+
+
+router.use(verificarMiddleware);
 
 router.get('/', controlador.listarUsuarios);
 router.post('/', controlador.crearUsuario);

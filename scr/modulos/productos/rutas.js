@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const controlador = require('./controlador');
 const respuestas = require('../../red/respuestas');
+const { verificarMiddleware } = require('../../admin'); // Importación de seguridad
+
+// PROTECCIÓN TOTAL
+router.use(verificarMiddleware);
 
 // LISTAR
 router.get('/', (req, res) => {

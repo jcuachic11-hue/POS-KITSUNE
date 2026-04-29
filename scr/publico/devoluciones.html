@@ -45,7 +45,35 @@
       try {
         const res = await fetch("/devoluciones", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          // CRÍTICO: Permite que el navegador envíe la cookie de sesión
+          headers: { "Content-Type": "application/json" },
+          credentials: 'include', // <--- Replicado de Ventas
+          body: JSON.stringify({ 
+            productoId: productoId, 
+            cantidad: parseInt(cantidad) 
+          })
+        });
+
+        // Manejo de sesión igual que en Ventas
+        if (res.status === 403) {
+            alert('Sesión no válida. Por favor inicia sesión.');
+            window.location.href = "login.html";
+            return;
+        }
+
+        const data = await res.json();
+
+        if (data.error === false) {
+          const info = data.body;
+          alert(`✅ Éxito: ${info.mensaje}\nID: ${info.productoId}\nCantidad: ${info.cantidad}`);
+          document.getElementById("formDevolucion").reset();
+        } else {
+          alert("❌ Error: " + (data.body || "No se pudo procesar la devolución"));
+        }
+      } catch (err) {
+        console.error("Error en el fetch:", err);
+        alert("Error de conexión con el servidor");
+      }
+    });
+  </script>
+</body>
+</html>

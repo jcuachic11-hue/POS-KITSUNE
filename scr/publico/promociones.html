@@ -1,53 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Promociones - POS Kitsune</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2, h3 { color: #333; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        input { padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; width: calc(33% - 22px); display: inline-block; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        #btnGuardar { background-color: #2ecc71; color: white; width: 100%; margin-top: 10px; }
+        #btnGuardar:hover { background-color: #27ae60; }
+        .btn-edit { background: #ffc107; color: black; margin-right: 5px; }
+        .btn-delete { background: #dc3545; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; }
+        .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+
 <div class="container">
+    <a href="index.html" class="back-link">⬅ Volver al Inicio</a>
+    
     <h2 id="tituloForm">Nueva Promoción</h2>
-    <input type="text" id="nombre" placeholder="Nombre">
-    <input type="text" id="codigo" placeholder="Código">
-    <input type="number" id="valor" placeholder="Porcentaje %">
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;">
+        <input type="text" id="nombre" placeholder="Nombre (Ej: Buen Fin)">
+        <input type="text" id="codigo" placeholder="Código (Ej: PROMO10)">
+        <input type="number" id="valor" placeholder="Porcentaje %">
+    </div>
+    
     <button id="btnGuardar" onclick="guardarPromo()">Guardar Promoción</button>
-    <button id="btnCancelar" onclick="limpiarFormulario()" style="display:none; background:gray; margin-top:5px;">Cancelar Edición</button>
+    <button id="btnCancelar" onclick="limpiarFormulario()" style="display:none; background: #6c757d; color: white; width: 100%; margin-top: 5px;">Cancelar Edición</button>
 
     <h3>Lista de Promociones</h3>
     <table id="tablaPromos">
         <thead>
-            <tr><th>Nombre</th><th>Código</th><th>%</th><th>Acciones</th></tr>
+            <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Descuento</th>
+                <th>Acciones</th>
+            </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+            </tbody>
     </table>
 </div>
 
 <script>
-    let idEnEdicion = null; // Nuestra variable "memoria" en lugar del input oculto
+    let idEnEdicion = null;
 
+    // --- CARGAR PROMOS (GET) ---
     async function cargarPromos() {
-        const res = await fetch('/promociones');
-        const data = await res.json();
-        const tabla = document.querySelector('#tablaPromos tbody');
-        
-        tabla.innerHTML = data.body.map(p => `
-            <tr>
-                <td>${p.nombre}</td>
-                <td><strong>${p.codigo}</strong></td>
-                <td>${p.valor}%</td>
-                <td>
-                    <button onclick='prepararEdicion(${JSON.stringify(p)})' style="background:#ffc107; color:black; border:none; padding:5px 10px; cursor:pointer; border-radius:4px;">Editar</button>
-                    <button onclick="eliminar(${p.id})" style="background:#dc3545; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:4px;">Eliminar</button>
-                </td>
-            </tr>
-        `).join('');
+        try {
+            const res = await fetch('/promociones', { credentials: 'include' });
+            
+            if (res.status === 403) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const data = await res.json();
+            const tabla = document.querySelector('#tablaPromos tbody');
+            
+            if (!data.body || data.body.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay promociones activas.</td></tr>';
+                return;
+            }
+
+            tabla.innerHTML = data.body.map(p => `
+                <tr>
+                    <td>${p.nombre}</td>
+                    <td><strong>${p.codigo}</strong></td>
+                    <td>${p.valor}%</td>
+                    <td>
+                        <button class="btn-edit" onclick='prepararEdicion(${JSON.stringify(p)})'>Editar</button>
+                        <button class="btn-delete" onclick="eliminar(${p.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error("Error al cargar promos:", err);
+        }
     }
 
+    // --- PREPARAR EDICIÓN ---
     function prepararEdicion(p) {
-        idEnEdicion = p.id; // Guardamos el ID en la variable
+        idEnEdicion = p.id;
         document.getElementById('nombre').value = p.nombre;
         document.getElementById('codigo').value = p.codigo;
         document.getElementById('valor').value = p.valor;
         
-        // Cambiamos la interfaz para que sepa que está editando
         document.getElementById('tituloForm').innerText = "Editando Promoción";
         document.getElementById('btnGuardar').innerText = "Actualizar Cambios";
         document.getElementById('btnCancelar').style.display = "block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // --- LIMPIAR ---
     function limpiarFormulario() {
         idEnEdicion = null;
         document.getElementById('nombre').value = "";
@@ -58,36 +110,74 @@
         document.getElementById('btnCancelar').style.display = "none";
     }
 
+    // --- GUARDAR (POST/PUT) ---
     async function guardarPromo() {
-        const body = {
-            nombre: document.getElementById('nombre').value,
-            codigo: document.getElementById('codigo').value,
-            valor: document.getElementById('valor').value
-        };
+        const nombre = document.getElementById('nombre').value;
+        const codigo = document.getElementById('codigo').value;
+        const valor = document.getElementById('valor').value;
 
-        if (idEnEdicion) body.id = idEnEdicion; // Si estamos editando, incluimos el ID
+        if (!nombre || !codigo || !valor) {
+            alert("Por favor completa todos los campos.");
+            return;
+        }
+
+        const body = { nombre, codigo, valor: parseFloat(valor) };
+        if (idEnEdicion) body.id = idEnEdicion;
 
         const metodo = idEnEdicion ? 'PUT' : 'POST';
 
-        const res = await fetch('/promociones', {
-            method: metodo,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
+        try {
+            const res = await fetch('/promociones', {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(body)
+            });
 
-        if (res.ok) {
-            alert(idEnEdicion ? "Actualizado" : "Guardado");
-            limpiarFormulario();
-            cargarPromos();
+            if (res.status === 403) {
+                alert("Sesión expirada o sin permisos.");
+                window.location.href = "login.html";
+                return;
+            }
+
+            if (res.ok) {
+                alert(idEnEdicion ? "Promoción actualizada" : "Promoción guardada");
+                limpiarFormulario();
+                cargarPromos();
+            } else {
+                alert("Error al procesar la solicitud.");
+            }
+        } catch (err) {
+            console.error("Error en el guardado:", err);
         }
     }
 
+    // --- ELIMINAR (DELETE) ---
     async function eliminar(id) {
-        if(confirm('¿Seguro que quieres eliminar esta promo?')) {
-            await fetch('/promociones/' + id, { method: 'DELETE' });
-            cargarPromos();
+        if(confirm('¿Estás seguro de eliminar esta promoción?')) {
+            try {
+                const res = await fetch('/promociones/' + id, { 
+                    method: 'DELETE',
+                    credentials: 'include' 
+                });
+
+                if (res.status === 403) {
+                    alert("No tienes permiso para eliminar.");
+                    return;
+                }
+
+                if (res.ok) {
+                    cargarPromos();
+                }
+            } catch (err) {
+                console.error("Error al eliminar:", err);
+            }
         }
     }
 
-    cargarPromos();
+    // Carga inicial
+    window.onload = cargarPromos;
 </script>
+
+</body>
+</html>
